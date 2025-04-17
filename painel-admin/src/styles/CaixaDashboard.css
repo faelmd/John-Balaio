@@ -1,0 +1,45 @@
+/* src/styles/CaixaDashboard.css */
+
+.caixa-container {
+    min-height: 100vh;
+    padding: 2rem;
+    background-color: #fff;
+    font-family: Arial, sans-serif;
+  }
+  
+  .caixa-title {
+    color: #f97316;
+    text-align: center;
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 2rem;
+  }
+  
+  .mesas-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+  }
+  
+  .mesa-button {
+    background-color: #f97316;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 9999px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  
+  .mesa-button:hover {
+    background-color: #ea580c;
+  }
+  
+  .mensagem {
+    text-align: center;
+    color: #444;
+    font-size: 1.1rem;
+  }
+  

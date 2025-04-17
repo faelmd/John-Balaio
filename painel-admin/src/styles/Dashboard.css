@@ -1,0 +1,26 @@
+/* src/styles/Dashboard.css */
+
+.dashboard-container {
+    padding: 2rem;
+    background-color: white;
+    min-height: 100vh;
+    font-family: Arial, sans-serif;
+  }
+  
+  .dashboard-title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #f97316; /* Laranja */
+    margin-bottom: 2rem;
+  }
+  
+  .section {
+    margin-bottom: 3rem;
+  }
+  
+  .section h2 {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+    color: #f97316;
+  }
+  
