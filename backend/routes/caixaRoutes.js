@@ -3,6 +3,91 @@ const router = express.Router();
 const pool = require('../db');
 
 // ---------------------------
+// GET /mesas-completas - Usado no painel do caixa para listar mesas com todos os pedidos e itens
+// ---------------------------
+router.get('/mesas-completas', async (req, res) => {
+  try {
+    // Busca todas as mesas com pedidos que ainda não estão prontos
+    const [mesas] = await pool.query(
+      'SELECT DISTINCT mesa FROM pedidos WHERE status != "pronto" ORDER BY mesa ASC'
+    );
+
+    const dadosMesa = await Promise.all(
+      mesas.map(async ({ mesa }) => {
+        const [pedidos] = await pool.query(
+          'SELECT id, status, cozinheiro, origem, created_at FROM pedidos WHERE mesa = ? ORDER BY created_at ASC',
+          [mesa]
+        );
+
+        const pedidosComItens = await Promise.all(
+          pedidos.map(async (pedido) => {
+            const [itens] = await pool.query(
+              'SELECT id, nome, quantidade, preco, observacao, pago FROM itens_pedido WHERE pedido_id = ? ORDER BY id ASC',
+              [pedido.id]
+            );
+            return { ...pedido, itens };
+          })
+        );
+
+        return {
+          mesa,
+          pedidos: pedidosComItens,
+        };
+      })
+    );
+
+    res.status(200).json(dadosMesa);
+  } catch (err) {
+    console.error('Erro ao buscar mesas completas:', err);
+    res.status(500).json({ error: 'Erro ao buscar dados do caixa' });
+  }
+});
+
+// ---------------------------
+// GET /pedidos?origem=cozinha|bar - Listar pedidos por origem agrupados por mesa
+// ---------------------------
+router.get('/pedidos', async (req, res) => {
+  const { origem } = req.query;
+
+  if (!origem || (origem !== 'cozinha' && origem !== 'bar')) {
+    return res.status(400).json({ error: 'Origem inválida. Use "cozinha" ou "bar".' });
+  }
+
+  try {
+    // Busca todos os pedidos com a origem desejada e que não estão prontos
+    const [pedidos] = await pool.query(
+      'SELECT id, mesa, status, cozinheiro, created_at FROM pedidos WHERE origem = ? AND status != "pronto" ORDER BY created_at ASC',
+      [origem]
+    );
+
+    // Para cada pedido, busca os itens
+    const pedidosComItens = await Promise.all(
+      pedidos.map(async pedido => {
+        const [itens] = await pool.query(
+          'SELECT id, nome, quantidade, preco, observacao, pago FROM itens_pedido WHERE pedido_id = ? ORDER BY id ASC',
+          [pedido.id]
+        );
+        return { ...pedido, itens };
+      })
+    );
+
+    // Agrupa os pedidos por mesa
+    const agrupadosPorMesa = {};
+    for (const pedido of pedidosComItens) {
+      if (!agrupadosPorMesa[pedido.mesa]) {
+        agrupadosPorMesa[pedido.mesa] = [];
+      }
+      agrupadosPorMesa[pedido.mesa].push(pedido);
+    }
+
+    res.status(200).json(agrupadosPorMesa);
+  } catch (err) {
+    console.error('Erro ao buscar pedidos por origem:', err);
+    res.status(500).json({ error: 'Erro ao buscar pedidos por origem' });
+  }
+});
+
+// ---------------------------
 // GET /mesas - Listar mesas com pedidos não prontos
 // ---------------------------
 router.get('/mesas', async (req, res) => {

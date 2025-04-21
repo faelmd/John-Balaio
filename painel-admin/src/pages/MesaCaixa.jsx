@@ -15,7 +15,7 @@ const MesaCaixa = () => {
 
     const fetchItens = async () => {
       try {
-        const responsePedidos = await axios.get('http://localhost:5000/api/pedidos');
+        const responsePedidos = await axios.get('http://localhost:5000/api/pedidos?origem=caixa');
         const pedidoDaMesa = responsePedidos.data.find(p => p.mesa === parseInt(mesaId));
 
         if (!pedidoDaMesa) {
@@ -57,7 +57,7 @@ const MesaCaixa = () => {
       setSelecionados([]);
       setLoading(true);
       // Recarrega os itens
-      const responsePedidos = await axios.get('http://localhost:5000/api/pedidos');
+      const responsePedidos = await axios.get('http://localhost:5000/api/pedidos?origem=caixa');
       const pedidoDaMesa = responsePedidos.data.find(p => p.mesa === parseInt(mesaId));
 
       if (!pedidoDaMesa) {
