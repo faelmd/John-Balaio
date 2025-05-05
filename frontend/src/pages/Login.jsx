@@ -10,7 +10,7 @@ const senhas = {
 };
 
 const rotas = {
-    admin: '/dashboard',
+    admin: '/administrador',
     cozinha: '/cozinha',
     caixa: '/caixa',
     bar: '/bar',

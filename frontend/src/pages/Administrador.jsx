@@ -1,10 +1,11 @@
-// src/pages/Dashboard.jsx
+// src/pages/Administrador.jsx
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import ProductCard from '../components/ProductCard';
 import ProductForm from '../components/ProductForm';
+import '../styles/Administrador.css';
 
-const Dashboard = () => {
+const Administrador = () => {
   const [products, setProducts] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -19,6 +20,7 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
+    document.title = 'John Balaio | Administrador';
     fetchProducts();
   }, []);
 
@@ -58,50 +60,42 @@ const Dashboard = () => {
   };
 
   const groupedProducts = products.reduce((acc, product) => {
-    const key = `${product.origem} - ${product.category}`;
+    const key = `${product.origem} - ${product.categoria}`;
     if (!acc[key]) acc[key] = [];
     acc[key].push(product);
     return acc;
   }, {});
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-black">Produtos</h1>
-        <button
-          onClick={handleNewProduct}
-          className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600"
-        >
+    <div className="admin-container">
+      <div className="admin-header">
+        <h1>Produtos</h1>
+        <button className="new-product-btn" onClick={handleNewProduct}>
           Novo Produto
         </button>
       </div>
 
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-lg w-full">
-            <h2 className="text-xl font-bold mb-4">
-              {editingProduct ? 'Editar Produto' : 'Cadastrar Produto'}
-            </h2>
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>{editingProduct ? 'Editar Produto' : 'Cadastrar Produto'}</h2>
             <ProductForm
               onProductSaved={fetchProducts}
               productToEdit={editingProduct}
               onClose={closeForm}
             />
-            <button
-              className="mt-4 text-sm text-red-500 underline"
-              onClick={closeForm}
-            >
+            <button className="cancel-btn" onClick={closeForm}>
               Cancelar
             </button>
           </div>
         </div>
       )}
 
-      <div className="grid gap-6">
+      <div className="product-group-list">
         {Object.entries(groupedProducts).map(([group, items]) => (
-          <div key={group}>
-            <h3 className="text-xl font-semibold text-orange-600 mb-3">{group}</h3>
-            <div className="flex flex-wrap gap-4">
+          <div key={group} className="product-group">
+            <h3>{group}</h3>
+            <div className="product-list">
               {items.map((product) => (
                 <ProductCard
                   key={product.id}
@@ -119,4 +113,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default Administrador;

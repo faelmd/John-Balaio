@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 // Páginas
 import Home from './pages/Home';
 import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
+import Administrador from './pages/Administrador';
 import CozinhaPage from './pages/Cozinha';
 import CaixaDashboard from './pages/Caixa';
 import MesaCaixa from './pages/MesaCaixa';
@@ -24,7 +24,7 @@ function App() {
         <Route path="/cozinha/login" element={<LoginCozinha />} />
         <Route path="/bar/login" element={<LoginBar />} />
         <Route path="/caixa/login" element={<LoginCaixa />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/Administrador" element={<Administrador />} />
         <Route path="/cozinha" element={<CozinhaPage />} />
         <Route path="/bar" element={<Bar />} />
         <Route path="/caixa" element={<CaixaDashboard />} />

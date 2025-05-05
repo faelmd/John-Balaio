@@ -5,7 +5,7 @@ const path = require('path');
 // GET - Listar produtos
 const getAllProducts = async (req, res) => {
     try {
-        const [results] = await db.query('SELECT * FROM produtos');
+        const [results] = await db.query('SELECT id, name, description, price, image, disponivel, ingrediente, origem, categoria FROM produtos');
         res.json(results);
     } catch (err) {
         console.error('Erro ao buscar produtos:', err);
@@ -13,14 +13,25 @@ const getAllProducts = async (req, res) => {
     }
 };
 
-// POST - Criar produto com upload de imagem
+// POST - Criar produto com upload de imagem (opcional)
 const createProduct = async (req, res) => {
     try {
-        const { name, description, price } = req.body;
+        const { name, description, price, ingrediente, origem, categoria } = req.body;
+
+        if (!name || !description || !price || !origem || !categoria) {
+            return res.status(400).json({ error: 'Campos obrigatórios não informados' });
+        }
+
+        const parsedPrice = parseFloat(price);
+        if (isNaN(parsedPrice)) {
+            return res.status(400).json({ error: 'Preço inválido' });
+        }
+
         const image = req.file ? req.file.filename : null;
 
-        const query = 'INSERT INTO produtos (name, description, price, image, disponivel) VALUES (?, ?, ?, ?, ?)';
-        const [result] = await db.query(query, [name, description, price, image, true]);
+        // Atualizando a consulta para incluir origem e categoria
+        const query = 'INSERT INTO produtos (name, description, price, image, disponivel, ingrediente, origem, categoria) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+        const [result] = await db.query(query, [name, description, parsedPrice, image, true, ingrediente, origem, categoria]);
 
         res.status(201).json({ message: 'Produto criado com sucesso', id: result.insertId });
     } catch (err) {
@@ -33,11 +44,11 @@ const createProduct = async (req, res) => {
 const updateProduct = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, description, price } = req.body;
+        const { name, description, price, ingrediente, origem, categoria } = req.body;
         const image = req.file ? req.file.filename : null;
 
-        let query = 'UPDATE produtos SET name=?, description=?, price=?';
-        const params = [name, description, price];
+        let query = 'UPDATE produtos SET name=?, description=?, price=?, ingrediente=?, origem=?, categoria=?';
+        const params = [name, description, price, ingrediente, origem, categoria];
 
         if (image) {
             query += ', image=?';
