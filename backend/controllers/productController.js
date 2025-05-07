@@ -14,11 +14,15 @@ const getAllProducts = async (req, res) => {
 };
 
 // POST - Criar produto com upload de imagem (opcional)
+// POST - Criar produto com upload de imagem (opcional)
 const createProduct = async (req, res) => {
     try {
-        const { name, description, price, ingrediente, origem, categoria } = req.body;
+        console.log('BODY:', req.body);
+        console.log('FILE:', req.file);
 
-        if (!name || !description || !price || !origem || !categoria) {
+        let { name, description, price, ingrediente, origem, categoria } = req.body;
+
+        if (!name || !description || !price || !origem || !categoria || !ingrediente) {
             return res.status(400).json({ error: 'Campos obrigatórios não informados' });
         }
 
@@ -27,11 +31,31 @@ const createProduct = async (req, res) => {
             return res.status(400).json({ error: 'Preço inválido' });
         }
 
+        // Tenta converter o ingrediente de string para array
+        try {
+            ingrediente = JSON.parse(ingrediente);
+        } catch (err) {
+            return res.status(400).json({ error: 'Ingredientes inválidos (não é JSON válido)' });
+        }
+
+        // Verifica se ingrediente é realmente um array
+        if (!Array.isArray(ingrediente)) {
+            return res.status(400).json({ error: 'Ingredientes devem ser um array' });
+        }
+
         const image = req.file ? req.file.filename : null;
 
-        // Atualizando a consulta para incluir origem e categoria
         const query = 'INSERT INTO produtos (name, description, price, image, disponivel, ingrediente, origem, categoria) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
-        const [result] = await db.query(query, [name, description, parsedPrice, image, true, ingrediente, origem, categoria]);
+        const [result] = await db.query(query, [
+            name,
+            description,
+            parsedPrice,
+            image,
+            true,
+            JSON.stringify(ingrediente),
+            origem,
+            categoria
+        ]);
 
         res.status(201).json({ message: 'Produto criado com sucesso', id: result.insertId });
     } catch (err) {
@@ -39,6 +63,7 @@ const createProduct = async (req, res) => {
         res.status(500).json({ error: 'Erro ao criar produto' });
     }
 };
+
 
 // PUT - Editar produto
 const updateProduct = async (req, res) => {

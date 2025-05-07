@@ -7,7 +7,7 @@ const ProductForm = ({ onProductSaved, productToEdit, onClose }) => {
     name: '',
     description: '',
     price: '',
-    category: '',
+    categoria: '',
     origem: '',
   });
   const [image, setImage] = useState(null);
@@ -20,10 +20,10 @@ const ProductForm = ({ onProductSaved, productToEdit, onClose }) => {
         name: productToEdit.name || '',
         description: productToEdit.description || '',
         price: productToEdit.price || '',
-        category: productToEdit.category || '',
+        categoria: productToEdit.categoria || '',
         origem: productToEdit.origem || '',
       });
-      // Se ingredientes já existirem no produto a ser editado
+
       if (productToEdit.ingredientes) {
         try {
           const parsed = typeof productToEdit.ingredientes === 'string'
@@ -50,8 +50,8 @@ const ProductForm = ({ onProductSaved, productToEdit, onClose }) => {
     }
   };
 
-  const handleRemoveIngrediente = (indexToRemove) => {
-    setIngredientes((prev) => prev.filter((_, i) => i !== indexToRemove));
+  const handleRemoveIngrediente = (index) => {
+    setIngredientes((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e) => {
@@ -61,7 +61,7 @@ const ProductForm = ({ onProductSaved, productToEdit, onClose }) => {
     formData.append('name', product.name);
     formData.append('description', product.description);
     formData.append('price', product.price);
-    formData.append('category', product.category);
+    formData.append('categoria', product.categoria);
     formData.append('origem', product.origem);
     formData.append('ingredientes', JSON.stringify(ingredientes));
     if (image) {
@@ -81,11 +81,11 @@ const ProductForm = ({ onProductSaved, productToEdit, onClose }) => {
         alert('Produto cadastrado com sucesso!');
       }
 
-      if (onProductSaved) onProductSaved();
-      setProduct({ name: '', description: '', price: '', category: '', origem: '' });
+      onProductSaved?.();
+      onClose?.();
+      setProduct({ name: '', description: '', price: '', categoria: '', origem: '' });
       setIngredientes([]);
       setImage(null);
-      if (onClose) onClose();
     } catch (error) {
       console.error('Erro ao salvar produto:', error);
       alert('Erro ao salvar produto!');
@@ -94,93 +94,125 @@ const ProductForm = ({ onProductSaved, productToEdit, onClose }) => {
 
   return (
     <form onSubmit={handleSubmit} className="product-form">
-      <input
-        type="text"
-        name="name"
-        value={product.name || ''}
-        onChange={handleChange}
-        placeholder="Nome"
-        required
-      />
-      <textarea
-        name="description"
-        value={product.description || ''}
-        onChange={handleChange}
-        placeholder="Descrição"
-        required
-      />
-      <input
-        type="number"
-        name="price"
-        value={product.price || ''}
-        onChange={handleChange}
-        placeholder="Preço"
-        required
-        min="0"
-        step="0.01"
-      />
-      <select
-        name="category"
-        value={product.category || ''}
-        onChange={handleChange}
-        required
-      >
-        <option value="">Selecione a categoria</option>
-        <option value="Carnes">Carnes</option>
-        <option value="Acompanhamento">Acompanhamento</option>
-        <option value="Prato individual">Prato individual</option>
-        <option value="Molhos">Molhos</option>
-        <option value="Hamburguer">Hamburguer</option>
-        <option value="Extras">Extras</option>
-        <option value="Porções">Porções</option>
-        <option value="Sobremesas">Sobremesas</option>
-        <option value="Bebidas">Bebidas</option>
-      </select>
-
-      <select
-        name="origem"
-        value={product.origem || ''}
-        onChange={handleChange}
-        required
-      >
-        <option value="">Selecione a origem</option>
-        <option value="cozinha">Cozinha</option>
-        <option value="bar">Bar</option>
-      </select>
-
-      {/* Ingredientes */}
-      <div className="ingredientes-container">
+      <div>
+        <label htmlFor="product-name">Nome:</label>
         <input
+          type="text"
+          id="product-name"
+          name="name"
+          value={product.name}
+          onChange={handleChange}
+          placeholder="Nome"
+          required
+        />
+      </div>
+
+      <div>
+        <label htmlFor="product-description">Descrição:</label>
+        <textarea
+          id="product-description"
+          name="description"
+          value={product.description}
+          onChange={handleChange}
+          placeholder="Descrição"
+          required
+        />
+      </div>
+
+      <div>
+        <label htmlFor="product-price">Preço:</label>
+        <input
+          type="number"
+          id="product-price"
+          name="price"
+          value={product.price}
+          onChange={handleChange}
+          placeholder="Preço"
+          min="0"
+          step="0.01"
+          required
+        />
+      </div>
+
+      <div>
+        <label htmlFor="product-categoria">Categoria:</label>
+        <select
+          id="product-categoria"
+          name="categoria"
+          value={product.categoria}
+          onChange={handleChange}
+          required
+        >
+          <option value="">Selecione a categoria</option>
+          <option value="Carnes">Carnes</option>
+          <option value="Acompanhamento">Acompanhamento</option>
+          <option value="Prato individual">Prato individual</option>
+          <option value="Molhos">Molhos</option>
+          <option value="Hamburguer">Hamburguer</option>
+          <option value="Extras">Extras</option>
+          <option value="Porções">Porções</option>
+          <option value="Sobremesas">Sobremesas</option>
+          <option value="Refrigerante">Refrigerante</option>
+          <option value="Sucos">Sucos</option>
+          <option value="Drinks">Drinks</option>
+          <option value="Doses">Doses</option>
+          <option value="Cervejas">Cervejas</option>
+          <option value="Outros">Outros</option>
+        </select>
+      </div>
+
+      <div>
+        <label htmlFor="product-origem">Origem:</label>
+        <select
+          id="product-origem"
+          name="origem"
+          value={product.origem}
+          onChange={handleChange}
+          required
+        >
+          <option value="">Selecione a origem</option>
+          <option value="Cozinha">Cozinha</option>
+          <option value="Bar">Bar</option>
+        </select>
+      </div>
+
+      <div className="ingredientes-section">
+        <label htmlFor="ingrediente-input">Ingredientes:</label>
+        <input
+          id="ingrediente-input"
           type="text"
           value={ingredienteInput}
           onChange={(e) => setIngredienteInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              handleAddIngrediente();
-            }
-          }}
-          placeholder="Adicionar ingrediente e pressione Enter"
+          placeholder="Adicionar ingrediente"
         />
-        <div className="ingredientes-list">
-          {ingredientes.map((item, idx) => (
-            <span key={idx} className="ingrediente-chip">
+        <button type="button" onClick={handleAddIngrediente} aria-label="Adicionar ingrediente">
+          Adicionar
+        </button>
+
+        <ul className="ingredientes-list">
+          {ingredientes.map((item, index) => (
+            <li key={index}>
               {item}
-              <button type="button" onClick={() => handleRemoveIngrediente(idx)}>x</button>
-            </span>
+              <button type="button" onClick={() => handleRemoveIngrediente(index)} aria-label="Remover ingrediente">
+                ✕
+              </button>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
 
-      <input
-        type="file"
-        accept="image/*"
-        onChange={(e) => setImage(e.target.files[0])}
-        {...(!productToEdit && { required: true })}
-      />
+      <div>
+        <label htmlFor="product-image">Imagem:</label>
+        <input
+          id="product-image"
+          type="file"
+          accept="image/*"
+          onChange={(e) => setImage(e.target.files[0])}
+        />
+      </div>
 
-      <button type="submit">
-        {productToEdit ? 'Atualizar' : 'Cadastrar'}
+      <button type="submit" className="submit-btn">
+        {productToEdit ? 'Atualizar Produto' : 'Cadastrar Produto'}
       </button>
     </form>
   );

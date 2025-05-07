@@ -26,7 +26,7 @@ export default function CreateProductModal({
     name: "",
     description: "",
     price: "",
-    category: "",
+    categoria: "",
     origem: "",
   });
   const [image, setImage] = useState(null);
@@ -51,7 +51,7 @@ export default function CreateProductModal({
         name: productToEdit.name || "",
         description: productToEdit.description || "",
         price: productToEdit.price || "",
-        category: productToEdit.category || "",
+        categoria: productToEdit.categoria || "",
         origem: productToEdit.origem || "",
       });
       setIngredientes(productToEdit.ingredientes || []);
@@ -60,7 +60,7 @@ export default function CreateProductModal({
         name: "",
         description: "",
         price: "",
-        category: "",
+        categoria: "",
         origem: "",
       });
       setIngredientes([]);
@@ -74,7 +74,7 @@ export default function CreateProductModal({
   };
 
   const handleCategoriaChange = (e) => {
-    setProduct((prev) => ({ ...prev, category: e.target.value }));
+    setProduct((prev) => ({ ...prev, categoria: e.target.value }));
   };
 
   const handleDeleteIngrediente = (ingredienteSelecionado) => {
@@ -94,7 +94,7 @@ export default function CreateProductModal({
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!product.name || !product.description || !product.price || !product.category) {
+    if (!product.name || !product.description || !product.price || !product.categoria) {
       alert("Preencha todos os campos obrigatórios.");
       return;
     }
@@ -103,9 +103,9 @@ export default function CreateProductModal({
     formData.append("name", product.name);
     formData.append("description", product.description);
     formData.append("price", product.price);
-    formData.append("category", product.category);
+    formData.append("categoria", product.categoria);
     formData.append("origem", product.origem);
-    formData.append("ingredientes", ingredientes.join(","));
+    formData.append('ingredientes', JSON.stringify(ingredientes));
 
     if (image) {
       formData.append("image", image);
@@ -180,7 +180,7 @@ export default function CreateProductModal({
 
           <FormControl fullWidth required>
             <Select
-              value={product.category}
+              value={product.categoria}
               onChange={handleCategoriaChange}
               displayEmpty
             >
