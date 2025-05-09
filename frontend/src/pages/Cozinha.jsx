@@ -38,7 +38,7 @@ const Cozinha = () => {
     try {
       const { data } = await axios.get(`http://localhost:5000/api/pedidos?origem=cozinha`);
       const pedidosOrdenados = data.sort(
-        (a, b) => new Date(a.created_at) - new Date(b.created_at)
+        (a, b) => new Date(a.criado_em) - new Date(b.criado_em)
       );
       setPedidos(pedidosOrdenados);
     } catch (err) {

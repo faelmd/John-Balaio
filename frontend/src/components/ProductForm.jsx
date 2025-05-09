@@ -4,36 +4,23 @@ import '../styles/ProductForm.css';
 
 const ProductForm = ({ onProductSaved, productToEdit, onClose }) => {
   const [product, setProduct] = useState({
-    name: '',
-    description: '',
-    price: '',
+    nome: '',
+    descricao: '',
+    preco: '',
     categoria: '',
     origem: '',
   });
   const [image, setImage] = useState(null);
-  const [ingredienteInput, setIngredienteInput] = useState('');
-  const [ingredientes, setIngredientes] = useState([]);
 
   useEffect(() => {
     if (productToEdit) {
       setProduct({
-        name: productToEdit.name || '',
-        description: productToEdit.description || '',
-        price: productToEdit.price || '',
+        nome: productToEdit.nome || '',
+        descricao: productToEdit.descricao || '',
+        preco: productToEdit.preco || '',
         categoria: productToEdit.categoria || '',
         origem: productToEdit.origem || '',
       });
-
-      if (productToEdit.ingredientes) {
-        try {
-          const parsed = typeof productToEdit.ingredientes === 'string'
-            ? JSON.parse(productToEdit.ingredientes)
-            : productToEdit.ingredientes;
-          setIngredientes(Array.isArray(parsed) ? parsed : []);
-        } catch {
-          setIngredientes([]);
-        }
-      }
     }
   }, [productToEdit]);
 
@@ -42,31 +29,16 @@ const ProductForm = ({ onProductSaved, productToEdit, onClose }) => {
     setProduct((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleAddIngrediente = () => {
-    const trimmed = ingredienteInput.trim();
-    if (trimmed && !ingredientes.includes(trimmed)) {
-      setIngredientes((prev) => [...prev, trimmed]);
-      setIngredienteInput('');
-    }
-  };
-
-  const handleRemoveIngrediente = (index) => {
-    setIngredientes((prev) => prev.filter((_, i) => i !== index));
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const formData = new FormData();
-    formData.append('name', product.name);
-    formData.append('description', product.description);
-    formData.append('price', product.price);
+    formData.append('nome', product.nome);
+    formData.append('descricao', product.descricao);
+    formData.append('preco', product.preco);
     formData.append('categoria', product.categoria);
     formData.append('origem', product.origem);
-    formData.append('ingredientes', JSON.stringify(ingredientes));
-    if (image) {
-      formData.append('image', image);
-    }
+    if (image) formData.append('imagem', image);
 
     try {
       if (productToEdit) {
@@ -83,8 +55,7 @@ const ProductForm = ({ onProductSaved, productToEdit, onClose }) => {
 
       onProductSaved?.();
       onClose?.();
-      setProduct({ name: '', description: '', price: '', categoria: '', origem: '' });
-      setIngredientes([]);
+      setProduct({ nome: '', descricao: '', preco: '', categoria: '', origem: '' });
       setImage(null);
     } catch (error) {
       console.error('Erro ao salvar produto:', error);
@@ -95,12 +66,12 @@ const ProductForm = ({ onProductSaved, productToEdit, onClose }) => {
   return (
     <form onSubmit={handleSubmit} className="product-form">
       <div>
-        <label htmlFor="product-name">Nome:</label>
+        <label htmlFor="product-nome">Nome:</label>
         <input
           type="text"
-          id="product-name"
-          name="name"
-          value={product.name}
+          id="product-nome"
+          name="nome"
+          value={product.nome}
           onChange={handleChange}
           placeholder="Nome"
           required
@@ -108,11 +79,11 @@ const ProductForm = ({ onProductSaved, productToEdit, onClose }) => {
       </div>
 
       <div>
-        <label htmlFor="product-description">Descrição:</label>
+        <label htmlFor="product-descricao">Descrição:</label>
         <textarea
-          id="product-description"
-          name="description"
-          value={product.description}
+          id="product-descricao"
+          name="descricao"
+          value={product.descricao}
           onChange={handleChange}
           placeholder="Descrição"
           required
@@ -120,12 +91,12 @@ const ProductForm = ({ onProductSaved, productToEdit, onClose }) => {
       </div>
 
       <div>
-        <label htmlFor="product-price">Preço:</label>
+        <label htmlFor="product-preco">Preço:</label>
         <input
           type="number"
-          id="product-price"
-          name="price"
-          value={product.price}
+          id="product-preco"
+          name="preco"
+          value={product.preco}
           onChange={handleChange}
           placeholder="Preço"
           min="0"
@@ -149,6 +120,7 @@ const ProductForm = ({ onProductSaved, productToEdit, onClose }) => {
           <option value="Prato individual">Prato individual</option>
           <option value="Molhos">Molhos</option>
           <option value="Hamburguer">Hamburguer</option>
+          <option value="Pizza">Pizza</option>
           <option value="Extras">Extras</option>
           <option value="Porções">Porções</option>
           <option value="Sobremesas">Sobremesas</option>
@@ -176,43 +148,19 @@ const ProductForm = ({ onProductSaved, productToEdit, onClose }) => {
         </select>
       </div>
 
-      <div className="ingredientes-section">
-        <label htmlFor="ingrediente-input">Ingredientes:</label>
-        <input
-          id="ingrediente-input"
-          type="text"
-          value={ingredienteInput}
-          onChange={(e) => setIngredienteInput(e.target.value)}
-          placeholder="Adicionar ingrediente"
-        />
-        <button type="button" onClick={handleAddIngrediente} aria-label="Adicionar ingrediente">
-          Adicionar
-        </button>
-
-        <ul className="ingredientes-list">
-          {ingredientes.map((item, index) => (
-            <li key={index}>
-              {item}
-              <button type="button" onClick={() => handleRemoveIngrediente(index)} aria-label="Remover ingrediente">
-                ✕
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
-
       <div>
-        <label htmlFor="product-image">Imagem:</label>
+        <label htmlFor="product-imagem">Imagem:</label>
         <input
-          id="product-image"
           type="file"
-          accept="image/*"
+          id="product-imagem"
+          name="imagem"
           onChange={(e) => setImage(e.target.files[0])}
+          accept="image/*"
         />
       </div>
 
-      <button type="submit" className="submit-btn">
-        {productToEdit ? 'Atualizar Produto' : 'Cadastrar Produto'}
+      <button type="submit" className="btn salvar-btn">
+        {productToEdit ? 'Atualizar' : 'Cadastrar'}
       </button>
     </form>
   );

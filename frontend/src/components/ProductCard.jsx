@@ -2,36 +2,23 @@ import React from 'react';
 import '../styles/ProductCard.css';
 
 const ProductCard = ({ product, onEdit, onDelete, onToggleAvailability }) => {
-  const imageUrl = product.image
-    ? `http://localhost:5000/uploads/${product.image}`
+  const imageUrl = product.imagem
+    ? `http://localhost:5000/uploads/${product.imagem}`
     : '/default-image.jpg'; // Imagem padrão
-
-  const ingredientes = product.ingrediente || product.ingredientes || '';
 
   return (
     <div className="product-card">
       <img
         src={imageUrl}
-        alt={product.name}
+        alt={product.nome}
         className="product-image"
       />
 
-      <h3 className="product-name">{product.name}</h3>
-      <p className="product-description">{product.description}</p>
-      <p className="product-price">Preço: R$ {parseFloat(product.price).toFixed(2)}</p>
-      <p className="product-categoria">Categoria: {product.categoria || product.categoria}</p>
+      <h3 className="product-name">{product.nome}</h3>
+      <p className="product-description">{product.descricao}</p>
+      <p className="product-price">Preço: R$ {parseFloat(product.preco).toFixed(2)}</p>
+      <p className="product-categoria">Categoria: {product.categoria}</p>
       <p className="product-origin">Origem: {product.origem}</p>
-
-      {ingredientes && (
-        <div className="product-ingredients">
-          <h4>Ingredientes:</h4>
-          <ul>
-            {ingredientes.split(',').map((item, index) => (
-              <li key={index}>{item.trim()}</li>
-            ))}
-          </ul>
-        </div>
-      )}
 
       <div className="product-actions">
         <button

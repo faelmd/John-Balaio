@@ -5,7 +5,7 @@ const path = require('path');
 // GET - Listar produtos
 const getAllProducts = async (req, res) => {
     try {
-        const [results] = await db.query('SELECT id, name, description, price, image, disponivel, ingrediente, origem, categoria FROM produtos');
+        const [results] = await db.query('SELECT id, nome, descricao, preco, imagem, disponivel, origem, categoria FROM produtos');
         res.json(results);
     } catch (err) {
         console.error('Erro ao buscar produtos:', err);
@@ -14,45 +14,31 @@ const getAllProducts = async (req, res) => {
 };
 
 // POST - Criar produto com upload de imagem (opcional)
-// POST - Criar produto com upload de imagem (opcional)
 const createProduct = async (req, res) => {
     try {
         console.log('BODY:', req.body);
         console.log('FILE:', req.file);
 
-        let { name, description, price, ingrediente, origem, categoria } = req.body;
+        let { nome, descricao, preco, origem, categoria } = req.body;
 
-        if (!name || !description || !price || !origem || !categoria || !ingrediente) {
+        if (!nome || !descricao || !preco || !origem || !categoria) {
             return res.status(400).json({ error: 'Campos obrigatórios não informados' });
         }
 
-        const parsedPrice = parseFloat(price);
-        if (isNaN(parsedPrice)) {
+        const parsedPreco = parseFloat(preco);
+        if (isNaN(parsedPreco)) {
             return res.status(400).json({ error: 'Preço inválido' });
         }
 
-        // Tenta converter o ingrediente de string para array
-        try {
-            ingrediente = JSON.parse(ingrediente);
-        } catch (err) {
-            return res.status(400).json({ error: 'Ingredientes inválidos (não é JSON válido)' });
-        }
+        const imagem = req.file ? req.file.filename : null;
 
-        // Verifica se ingrediente é realmente um array
-        if (!Array.isArray(ingrediente)) {
-            return res.status(400).json({ error: 'Ingredientes devem ser um array' });
-        }
-
-        const image = req.file ? req.file.filename : null;
-
-        const query = 'INSERT INTO produtos (name, description, price, image, disponivel, ingrediente, origem, categoria) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+        const query = 'INSERT INTO produtos (nome, descricao, preco, imagem, disponivel, origem, categoria) VALUES (?, ?, ?, ?, ?, ?, ?)';
         const [result] = await db.query(query, [
-            name,
-            description,
-            parsedPrice,
-            image,
+            nome,
+            descricao,
+            parsedPreco,
+            imagem,
             true,
-            JSON.stringify(ingrediente),
             origem,
             categoria
         ]);
@@ -64,20 +50,19 @@ const createProduct = async (req, res) => {
     }
 };
 
-
 // PUT - Editar produto
 const updateProduct = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, description, price, ingrediente, origem, categoria } = req.body;
-        const image = req.file ? req.file.filename : null;
+        const { nome, descricao, preco, origem, categoria } = req.body;
+        const imagem = req.file ? req.file.filename : null;
 
-        let query = 'UPDATE produtos SET name=?, description=?, price=?, ingrediente=?, origem=?, categoria=?';
-        const params = [name, description, price, ingrediente, origem, categoria];
+        let query = 'UPDATE produtos SET nome=?, descricao=?, preco=?, origem=?, categoria=?';
+        const params = [nome, descricao, preco, origem, categoria];
 
-        if (image) {
-            query += ', image=?';
-            params.push(image);
+        if (imagem) {
+            query += ', imagem=?';
+            params.push(imagem);
         }
 
         query += ' WHERE id=?';
@@ -110,11 +95,11 @@ const deleteProduct = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const [results] = await db.query('SELECT image FROM produtos WHERE id=?', [id]);
-        const image = results[0]?.image;
+        const [results] = await db.query('SELECT imagem FROM produtos WHERE id=?', [id]);
+        const imagem = results[0]?.imagem;
 
-        if (image) {
-            const imagePath = path.join(__dirname, '../uploads', image);
+        if (imagem) {
+            const imagePath = path.join(__dirname, '../uploads', imagem);
             try {
                 await fs.unlink(imagePath);
             } catch (err) {

@@ -32,7 +32,7 @@ router.get('/', async (req, res) => {
 
   try {
     const [result] = await pool.query(
-      'SELECT * FROM pedidos WHERE origem = ? ORDER BY created_at ASC',
+      'SELECT * FROM pedidos WHERE origem = ? ORDER BY criado_em ASC',
       [origem]
     );
     res.status(200).json(result);
@@ -55,7 +55,7 @@ router.put('/pagar', async (req, res) => {
   try {
     const placeholders = itemIds.map(() => '?').join(',');
     await pool.query(
-      `UPDATE itens_pedido SET pago = TRUE WHERE id IN (${placeholders})`,
+      `UPDATE itens_pedidos SET pago = TRUE WHERE id IN (${placeholders})`,
       itemIds
     );
     res.status(200).json({ message: 'Itens atualizados com sucesso!' });
@@ -97,7 +97,7 @@ router.get('/itens/:pedidoId', async (req, res) => {
 
   try {
     const [itens] = await pool.query(
-      'SELECT id, nome, quantidade, preco, observacao, pago FROM itens_pedido WHERE pedido_id = ? ORDER BY id ASC',
+      'SELECT id, nome, quantidade, preco, observacao, pago FROM itens_pedidos WHERE pedido_id = ? ORDER BY id ASC',
       [pedidoId]
     );
     res.status(200).json(itens);
@@ -115,7 +115,7 @@ router.get('/nao-pagos/:pedidoId', async (req, res) => {
 
   try {
     const [itens] = await pool.query(
-      'SELECT id, nome, quantidade, preco, observacao, pago FROM itens_pedido WHERE pedido_id = ? AND pago = FALSE ORDER BY id ASC',
+      'SELECT id, nome, quantidade, preco, observacao, pago FROM itens_pedidos WHERE pedido_id = ? AND pago = FALSE ORDER BY id ASC',
       [pedidoId]
     );
     res.status(200).json(itens);
@@ -140,7 +140,7 @@ router.post('/itens', async (req, res) => {
 
   try {
     await pool.query(
-      'INSERT INTO itens_pedido (pedido_id, nome, quantidade, preco, observacao) VALUES (?, ?, ?, ?, ?)',
+      'INSERT INTO itens_pedidos (pedido_id, nome, quantidade, preco, observacao) VALUES (?, ?, ?, ?, ?)',
       [pedido_id, nome, quantidade, preco, observacao]
     );
     res.status(201).json({ message: 'Item adicionado com sucesso!' });

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
   Button,
-  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -23,15 +22,13 @@ export default function CreateProductModal({
   onProductSaved,
 }) {
   const [product, setProduct] = useState({
-    name: "",
-    description: "",
-    price: "",
+    nome: "",
+    descricao: "",
+    preco: "",
     categoria: "",
     origem: "",
   });
   const [image, setImage] = useState(null);
-  const [ingredientes, setIngredientes] = useState([]);
-  const [ingredienteInput, setIngredienteInput] = useState("");
 
   const categorias = [
     "Carnes",
@@ -48,22 +45,20 @@ export default function CreateProductModal({
   useEffect(() => {
     if (productToEdit) {
       setProduct({
-        name: productToEdit.name || "",
-        description: productToEdit.description || "",
-        price: productToEdit.price || "",
+        nome: productToEdit.nome || "",
+        descricao: productToEdit.descricao || "",
+        preco: productToEdit.preco || "",
         categoria: productToEdit.categoria || "",
         origem: productToEdit.origem || "",
       });
-      setIngredientes(productToEdit.ingredientes || []);
     } else {
       setProduct({
-        name: "",
-        description: "",
-        price: "",
+        nome: "",
+        descricao: "",
+        preco: "",
         categoria: "",
         origem: "",
       });
-      setIngredientes([]);
       setImage(null);
     }
   }, [productToEdit, open]);
@@ -77,35 +72,20 @@ export default function CreateProductModal({
     setProduct((prev) => ({ ...prev, categoria: e.target.value }));
   };
 
-  const handleDeleteIngrediente = (ingredienteSelecionado) => {
-    setIngredientes((prev) =>
-      prev.filter((ingrediente) => ingrediente !== ingredienteSelecionado)
-    );
-  };
-
-  const handleAddIngrediente = () => {
-    const valor = ingredienteInput.trim();
-    if (valor !== "" && !ingredientes.includes(valor)) {
-      setIngredientes((prev) => [...prev, valor]);
-      setIngredienteInput("");
-    }
-  };
-
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!product.name || !product.description || !product.price || !product.categoria) {
+    if (!product.nome || !product.descricao || !product.preco || !product.categoria) {
       alert("Preencha todos os campos obrigatórios.");
       return;
     }
 
     const formData = new FormData();
-    formData.append("name", product.name);
-    formData.append("description", product.description);
-    formData.append("price", product.price);
+    formData.append("nome", product.nome);
+    formData.append("descricao", product.descricao);
+    formData.append("preco", product.preco);
     formData.append("categoria", product.categoria);
     formData.append("origem", product.origem);
-    formData.append('ingredientes', JSON.stringify(ingredientes));
 
     if (image) {
       formData.append("image", image);
@@ -150,8 +130,8 @@ export default function CreateProductModal({
           <TextField
             required
             label="Nome"
-            name="name"
-            value={product.name}
+            name="nome"
+            value={product.nome}
             onChange={handleChange}
             fullWidth
           />
@@ -159,8 +139,8 @@ export default function CreateProductModal({
           <TextField
             required
             label="Descrição"
-            name="description"
-            value={product.description}
+            name="descricao"
+            value={product.descricao}
             onChange={handleChange}
             fullWidth
           />
@@ -168,8 +148,8 @@ export default function CreateProductModal({
           <TextField
             required
             label="Preço"
-            name="price"
-            value={product.price}
+            name="preco"
+            value={product.preco}
             onChange={handleChange}
             type="number"
             fullWidth
@@ -180,6 +160,7 @@ export default function CreateProductModal({
 
           <FormControl fullWidth required>
             <Select
+              native
               value={product.categoria}
               onChange={handleCategoriaChange}
               displayEmpty
@@ -193,36 +174,19 @@ export default function CreateProductModal({
             </Select>
           </FormControl>
 
-          {/* Adicionando ingredientes */}
           <TextField
-            label="Ingrediente"
-            value={ingredienteInput}
-            onChange={(e) => setIngredienteInput(e.target.value)}
+            label="Origem (cozinha ou bar)"
+            name="origem"
+            value={product.origem}
+            onChange={handleChange}
             fullWidth
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                handleAddIngrediente();
-              }
-            }}
-            placeholder="Digite o ingrediente e pressione Enter"
           />
-          <Stack direction="row" spacing={1} flexWrap="wrap">
-            {ingredientes.map((ingrediente) => (
-              <Chip
-                key={ingrediente}
-                label={ingrediente}
-                onDelete={() => handleDeleteIngrediente(ingrediente)}
-              />
-            ))}
-          </Stack>
         </Stack>
       </DialogContent>
-
       <DialogActions>
         <Button onClick={handleClose}>Cancelar</Button>
-        <Button type="submit" variant="contained" color="primary">
-          {productToEdit ? "Salvar alterações" : "Cadastrar"}
+        <Button type="submit" variant="contained">
+          {productToEdit ? "Salvar Alterações" : "Criar Produto"}
         </Button>
       </DialogActions>
     </Dialog>

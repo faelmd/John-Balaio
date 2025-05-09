@@ -15,14 +15,14 @@ router.get('/mesas-completas', async (req, res) => {
     const dadosMesa = await Promise.all(
       mesas.map(async ({ mesa }) => {
         const [pedidos] = await pool.query(
-          'SELECT id, status, cozinheiro, origem, created_at FROM pedidos WHERE mesa = ? ORDER BY created_at ASC',
+          'SELECT id, status, cozinheiro, origem, criado_em FROM pedidos WHERE mesa = ? ORDER BY criado_em ASC',
           [mesa]
         );
 
         const pedidosComItens = await Promise.all(
           pedidos.map(async (pedido) => {
             const [itens] = await pool.query(
-              'SELECT id, nome, quantidade, preco, observacao, pago FROM itens_pedido WHERE pedido_id = ? ORDER BY id ASC',
+              'SELECT id, nome, quantidade, preco, observacao, pago FROM itens_pedidos WHERE pedido_id = ? ORDER BY id ASC',
               [pedido.id]
             );
             return { ...pedido, itens };
@@ -56,7 +56,7 @@ router.get('/pedidos', async (req, res) => {
   try {
     // Busca todos os pedidos com a origem desejada e que não estão prontos
     const [pedidos] = await pool.query(
-      'SELECT id, mesa, status, cozinheiro, created_at FROM pedidos WHERE origem = ? AND status != "pronto" ORDER BY created_at ASC',
+      'SELECT id, mesa, status, cozinheiro, criado_em FROM pedidos WHERE origem = ? AND status != "pronto" ORDER BY criado_em ASC',
       [origem]
     );
 
@@ -64,7 +64,7 @@ router.get('/pedidos', async (req, res) => {
     const pedidosComItens = await Promise.all(
       pedidos.map(async pedido => {
         const [itens] = await pool.query(
-          'SELECT id, nome, quantidade, preco, observacao, pago FROM itens_pedido WHERE pedido_id = ? ORDER BY id ASC',
+          'SELECT id, nome, quantidade, preco, observacao, pago FROM itens_pedidos WHERE pedido_id = ? ORDER BY id ASC',
           [pedido.id]
         );
         return { ...pedido, itens };
@@ -111,13 +111,13 @@ router.get('/mesa/:mesa', async (req, res) => {
   const { mesa } = req.params;
   try {
     const [pedidos] = await pool.query(
-      'SELECT id, status, cozinheiro, origem, created_at FROM pedidos WHERE mesa = ? ORDER BY created_at ASC',
+      'SELECT id, status, cozinheiro, origem, criado_em FROM pedidos WHERE mesa = ? ORDER BY criado_em ASC',
       [mesa]
     );
     const pedidosComItens = await Promise.all(
       pedidos.map(async pedido => {
         const [itens] = await pool.query(
-          'SELECT id, nome, quantidade, preco, observacao, pago FROM itens_pedido WHERE pedido_id = ? ORDER BY id ASC',
+          'SELECT id, nome, quantidade, preco, observacao, pago FROM itens_pedidos WHERE pedido_id = ? ORDER BY id ASC',
           [pedido.id]
         );
         return { ...pedido, itens };
@@ -143,7 +143,7 @@ router.put('/pagar', async (req, res) => {
   try {
     const placeholders = itemIds.map(() => '?').join(',');
     await pool.query(
-      `UPDATE itens_pedido SET pago = TRUE WHERE id IN (${placeholders})`,
+      `UPDATE itens_pedidos SET pago = TRUE WHERE id IN (${placeholders})`,
       itemIds
     );
     res.status(200).json({ message: 'Itens atualizados com sucesso!' });
