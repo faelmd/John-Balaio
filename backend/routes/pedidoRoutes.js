@@ -23,16 +23,13 @@ router.get('/mesas', async (req, res) => {
 router.get('/', async (req, res) => {
   const { origem } = req.query;
 
-  if (!origem) {
-    return res.status(400).json({ error: 'Parâmetro origem é obrigatório' });
-  }
-  if (!['cozinha', 'bar'].includes(origem)) {
-    return res.status(400).json({ error: 'Origem inválida' });
+  if (!origem || !['cozinha', 'bar'].includes(origem)) {
+    return res.status(400).json({ error: 'Origem inválida ou ausente' });
   }
 
   try {
     const [result] = await pool.query(
-      'SELECT * FROM pedidos WHERE origem = ? ORDER BY criado_em ASC',
+      'SELECT * FROM pedidos WHERE origem = ? AND status != "pago" ORDER BY criado_em ASC',
       [origem]
     );
     res.status(200).json(result);
@@ -134,9 +131,6 @@ router.post('/itens', async (req, res) => {
   if (!pedido_id || !nome || !quantidade || preco == null) {
     return res.status(400).json({ error: 'Dados obrigatórios faltando' });
   }
-  if (preco <= 0) {
-    return res.status(400).json({ error: 'Preço inválido' });
-  }
 
   try {
     await pool.query(
@@ -156,11 +150,8 @@ router.post('/itens', async (req, res) => {
 router.post('/', async (req, res) => {
   const { mesa, origem, status = 'pendente', cozinheiro = null } = req.body;
 
-  if (!mesa || !origem) {
-    return res.status(400).json({ error: 'Mesa e origem são obrigatórios' });
-  }
-  if (!['cozinha', 'bar'].includes(origem)) {
-    return res.status(400).json({ error: 'Origem inválida' });
+  if (!mesa || !origem || !['cozinha', 'bar'].includes(origem)) {
+    return res.status(400).json({ error: 'Mesa e origem obrigatórios e válidos' });
   }
 
   try {
@@ -168,12 +159,85 @@ router.post('/', async (req, res) => {
       'INSERT INTO pedidos (mesa, status, cozinheiro, origem) VALUES (?, ?, ?, ?)',
       [mesa, status, cozinheiro, origem]
     );
-
-    const novoPedidoId = result.insertId;
-    res.status(201).json({ message: 'Pedido criado com sucesso!', pedidoId: novoPedidoId });
+    res.status(201).json({ message: 'Pedido criado com sucesso!', pedidoId: result.insertId });
   } catch (err) {
     console.error('Erro ao criar pedido:', err);
     res.status(500).json({ error: 'Erro ao criar pedido' });
+  }
+});
+
+// ---------------------------
+// GET /pedidos-prontos - Pedidos prontos para o caixa
+// ---------------------------
+router.get('/pedidos-prontos', async (req, res) => {
+  try {
+    const [pedidos] = await pool.query(
+      'SELECT id, mesa, status, origem, criado_em FROM pedidos WHERE status = "pronto" ORDER BY criado_em ASC'
+    );
+
+    const pedidosComItens = await Promise.all(
+      pedidos.map(async pedido => {
+        const [itens] = await pool.query(
+          'SELECT id, nome, quantidade, preco, observacao, pago FROM itens_pedidos WHERE pedido_id = ? ORDER BY id ASC',
+          [pedido.id]
+        );
+        return { ...pedido, itens };
+      })
+    );
+
+    const agrupados = {};
+    for (const pedido of pedidosComItens) {
+      if (!agrupados[pedido.mesa]) agrupados[pedido.mesa] = [];
+      agrupados[pedido.mesa].push(pedido);
+    }
+
+    res.status(200).json(agrupados);
+  } catch (err) {
+    console.error('Erro ao buscar pedidos prontos:', err);
+    res.status(500).json({ error: 'Erro ao buscar pedidos prontos' });
+  }
+});
+
+// ---------------------------
+// POST /pagar/:mesa - Finalizar pedidos de uma mesa
+// ---------------------------
+router.post('/pagar/:mesa', async (req, res) => {
+  const { mesa } = req.params;
+
+  try {
+    const [pendentes] = await pool.query(
+      'SELECT COUNT(*) AS pendentes FROM pedidos WHERE mesa = ? AND status != "pronto"',
+      [mesa]
+    );
+
+    if (pendentes[0].pendentes > 0) {
+      return res.status(400).json({ error: 'Ainda há pedidos pendentes ou em preparo nesta mesa.' });
+    }
+
+    await pool.query(
+      'UPDATE pedidos SET status = "pago" WHERE mesa = ?',
+      [mesa]
+    );
+
+    res.status(200).json({ success: true, message: 'Pedidos pagos com sucesso' });
+  } catch (err) {
+    console.error('Erro ao pagar pedidos:', err);
+    res.status(500).json({ error: 'Erro ao marcar pedidos como pagos' });
+  }
+});
+
+// ---------------------------
+// GET /historico-pedidos - Histórico de pedidos pagos
+// ---------------------------
+router.get('/historico-pedidos', async (req, res) => {
+  try {
+    const [pedidos] = await pool.query(
+      'SELECT * FROM pedidos WHERE status = "pago" ORDER BY criado_em DESC'
+    );
+    res.status(200).json(pedidos);
+  } catch (err) {
+    console.error('Erro ao buscar histórico de pedidos:', err);
+    res.status(500).json({ error: 'Erro ao buscar histórico de pedidos' });
   }
 });
 

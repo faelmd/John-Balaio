@@ -6,6 +6,8 @@ const path = require('path');
 const productRoutes = require('./routes/productRoutes');
 const pedidoRoutes = require('./routes/pedidoRoutes');
 const caixaRoutes = require('./routes/caixaRoutes');
+const barRoutes = require('./routes/barRoutes');
+const cozinhaRoutes = require('./routes/cozinhaRoutes');
 
 const app = express();
 app.use(cors());
@@ -18,6 +20,9 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/produtos', productRoutes);
 app.use('/api/pedidos', pedidoRoutes);
 app.use('/api/caixa', caixaRoutes);
+app.use('/api/bar', barRoutes);
+app.use('/api/cozinha', cozinhaRoutes);
+
 
 // Iniciar o servidor
 const PORT = process.env.PORT || 5000;

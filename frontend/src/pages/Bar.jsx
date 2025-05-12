@@ -16,17 +16,16 @@ const Bar = () => {
     const autorizado = localStorage.getItem('authBar') === 'true';
     if (!autorizado) {
       navigate('/login?perfil=bar');
+    } else {
+      fetchPedidos();
     }
   }, [navigate]);
 
-  useEffect(() => {
-    document.title = 'John Balaio | Bar';
-    fetchPedidos();
-  }, []);
-
   const fetchPedidos = async () => {
+    setLoading(true);
     try {
-      const response = await axios.get('http://localhost:5000/api/pedidos?origem=bar');
+      // Agora sem precisa de query string extra, já que o router só aceita bar
+      const response = await axios.get('http://localhost:5000/api/bar?origem=bar');
       setPedidos(response.data);
       setErro('');
     } catch (err) {
@@ -51,15 +50,42 @@ const Bar = () => {
     }
   };
 
+  const renderItens = (itens) => (
+    <ul className="itens-lista">
+      {itens.map(i => (
+        <li key={i.id}>
+          {i.quantidade}× {i.nome} {i.preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+          {i.observacao && <span className="obs"> (Obs: {i.observacao})</span>}
+        </li>
+      ))}
+    </ul>
+  );
+
   const renderPedidoCard = (pedido) => {
-    const proximoStatus = pedido.status === 'Pendente' ? 'Em preparo' :
-                          pedido.status === 'Em preparo' ? 'Pronto' : null;
+    const proximoStatus =
+      pedido.status === 'pendente' ? 'Em preparo' :
+      pedido.status === 'em_preparo' ? 'Pronto' : null;
+
+    // Display status capitalizado
+    const displayStatus = {
+      pendente: 'Pendente',
+      em_preparo: 'Em preparo',
+      pronto: 'Pronto',
+    }[pedido.status] || pedido.status;
 
     return (
       <div key={pedido.id} className="pedido-card">
         <p><strong>Mesa:</strong> {pedido.mesa}</p>
-        <p><strong>Itens:</strong> {pedido.itens}</p>
-        <p><strong>Status:</strong> <span className="text-orange-500">{pedido.status}</span></p>
+        <div>
+          <strong>Itens:</strong>
+          {renderItens(pedido.itens)}
+        </div>
+        <p>
+          <strong>Status:</strong>{' '}
+          <span className={`status-tag ${pedido.status.replace('_','-')}`}>
+            {displayStatus}
+          </span>
+        </p>
         {proximoStatus && (
           <div className="botoes">
             <button
@@ -75,17 +101,6 @@ const Bar = () => {
     );
   };
 
-  const renderColunaPedidos = (status) => {
-    const pedidosFiltrados = pedidos.filter(p => p.status === status);
-
-    return (
-      <div className="coluna" key={status}>
-        <h2 className="subtitulo">{status}</h2>
-        {pedidosFiltrados.length > 0 ? pedidosFiltrados.map(renderPedidoCard) : <p>Nenhum.</p>}
-      </div>
-    );
-  };
-
   return (
     <div className="bar-container">
       <h1 className="titulo">Pedidos do Bar</h1>
@@ -97,7 +112,22 @@ const Bar = () => {
         <p>Carregando pedidos...</p>
       ) : (
         <div className="colunas">
-          {STATUS_COLUNAS.map(renderColunaPedidos)}
+          {STATUS_COLUNAS.map(status => (
+            <div className="coluna" key={status}>
+              <h2 className="subtitulo">{status}</h2>
+              {pedidos
+                .filter(p => {
+                  const st = p.status.toLowerCase();
+                  return (
+                    (status === 'Pendente' && st === 'pendente') ||
+                    (status === 'Em preparo' && st === 'em_preparo') ||
+                    (status === 'Pronto' && st === 'pronto')
+                  );
+                })
+                .map(renderPedidoCard)
+                .reverse() /* opcional: inverte a ordem se quiser os mais antigos embaixo */}
+            </div>
+          ))}
         </div>
       )}
     </div>
