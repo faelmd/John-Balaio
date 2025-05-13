@@ -2,10 +2,10 @@ const db = require('../db');
 
 // Criar um novo pedido
 exports.criarPedido = async (req, res) => {
-    const { mesa, itens, origem } = req.body;
+    const { mesa, itens } = req.body;
 
-    if (!mesa || typeof mesa !== 'number' || !Array.isArray(itens) || itens.length === 0 || !origem) {
-        return res.status(400).json({ message: 'Mesa, origem e itens são obrigatórios.' });
+    if (!mesa || typeof mesa !== 'number' || !Array.isArray(itens) || itens.length === 0) {
+        return res.status(400).json({ message: 'Mesa e itens são obrigatórios.' });
     }
 
     const connection = await db.promise().getConnection();
@@ -13,41 +13,46 @@ exports.criarPedido = async (req, res) => {
         await connection.beginTransaction();
 
         const [pedidoResult] = await connection.query(
-            'INSERT INTO pedidos (mesa, status, origem) VALUES (?, ?, ?)',
-            [mesa, 'pendente', origem]
+            'INSERT INTO pedidos (mesa, status) VALUES (?, ?)',
+            [mesa, 'pendente']
         );
         const pedidoId = pedidoResult.insertId;
 
         const itemQueries = itens.map(item => {
+            if (!item.nome_produto || !item.origem) {
+                throw new Error('Cada item deve ter nome_produto e origem definidos.');
+            }
+
             return connection.query(
-                'INSERT INTO itens_pedidos (id_pedido, nome_produto, quantidade, preco_unitario, observacao, pago) VALUES (?, ?, ?, ?, ?, ?)',
+                `INSERT INTO itens_pedidos 
+                 (id_pedido, nome_produto, quantidade, preco_unitario, observacao, pago, origem) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
                 [
                     pedidoId,
                     item.nome_produto,
-                    item.quantidade,
+                    item.quantidade || 1,
                     item.preco_unitario || 0.0,
                     item.observacao || '',
-                    0
+                    0,
+                    item.origem
                 ]
-            ).catch(err => {
-                throw new Error('Erro ao inserir item: ' + err.message);
-            });
+            );
         });
 
         await Promise.all(itemQueries);
         await connection.commit();
 
-        res.status(201).json({ message: 'Pedido criado com sucesso!' });
+        res.status(201).json({ message: 'Pedido criado com sucesso!', pedidoId });
     } catch (error) {
         await connection.rollback();
-        console.error('Erro ao criar pedido:', error.message);
+        console.error('🚨 Erro ao criar pedido:', error.message);
         res.status(500).json({ message: 'Erro ao criar pedido.' });
     } finally {
         connection.release();
     }
 };
 
-// Listar todos os pedidos com itens
+// Listar todos os pedidos com seus itens
 exports.listarPedidos = async (req, res) => {
     try {
         const [pedidos] = await db.promise().query(
@@ -71,7 +76,7 @@ exports.listarPedidos = async (req, res) => {
     }
 };
 
-// Marcar pedido como "em_preparo" e registrar cozinheiro
+// Marcar pedido como "em_preparo" e registrar nome do cozinheiro
 exports.marcarComoEmPreparo = async (req, res) => {
     const { id } = req.params;
     const { nome_cozinheiro } = req.body;
@@ -82,9 +87,8 @@ exports.marcarComoEmPreparo = async (req, res) => {
 
     try {
         const [results] = await db.promise().query('SELECT * FROM pedidos WHERE id = ?', [id]);
-        const pedido = results[0];
 
-        if (!pedido) {
+        if (!results.length) {
             return res.status(404).json({ message: 'Pedido não encontrado.' });
         }
 
@@ -92,6 +96,7 @@ exports.marcarComoEmPreparo = async (req, res) => {
             'UPDATE pedidos SET status = ?, nome_cozinheiro = ? WHERE id = ?',
             ['em_preparo', nome_cozinheiro, id]
         );
+
         res.json({ message: 'Pedido marcado como "em_preparo".' });
     } catch (error) {
         console.error('Erro ao atualizar pedido:', error.message);
@@ -119,6 +124,7 @@ exports.marcarComoPronto = async (req, res) => {
             'UPDATE pedidos SET status = ? WHERE id = ?',
             ['pronto', id]
         );
+
         res.json({ message: 'Pedido marcado como "pronto".' });
     } catch (error) {
         console.error('Erro ao atualizar pedido:', error.message);
@@ -126,7 +132,7 @@ exports.marcarComoPronto = async (req, res) => {
     }
 };
 
-// Pagar itens específicos
+// Marcar itens como pagos
 exports.pagarItens = async (req, res) => {
     const { itens } = req.body;
 

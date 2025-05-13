@@ -89,4 +89,17 @@
   .btn.verde:hover {
     background-color: #86efac;
   }
-  
+  .status-tag.pendente {
+  background-color: #f9c74f;
+  color: #000;
+}
+
+.status-tag.em_preparo {
+  background-color: #f9844a;
+  color: #fff;
+}
+
+.status-tag.pronto {
+  background-color: #90be6d;
+  color: #fff;
+}
