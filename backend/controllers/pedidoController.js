@@ -13,8 +13,8 @@ exports.criarPedido = async (req, res) => {
         await connection.beginTransaction();
 
         const [pedidoResult] = await connection.query(
-            'INSERT INTO pedidos (mesa, status) VALUES (?, ?)',
-            [mesa, 'pendente']
+            'INSERT INTO pedidos (mesa, status, origem) VALUES (?, ?, ?)',
+            [mesa, 'pendente', 'cozinha'] // ou use o valor dinâmico do req.body.origem
         );
         const pedidoId = pedidoResult.insertId;
 

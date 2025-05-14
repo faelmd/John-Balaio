@@ -44,30 +44,35 @@ const Cozinha = () => {
   };
 
   const atualizarStatus = async (id, novoStatusLabel) => {
-    let nome_cozinheiro = '';
-    let novoStatus;
+    let cozinheiro = '';
+    let status;
 
-    // Mapeamento de status do botão para o formato esperado pelo backend
     if (novoStatusLabel === 'Em preparo') {
-      nome_cozinheiro = prompt('Digite o nome do cozinheiro:');
-      if (!nome_cozinheiro) return;
-      novoStatus = 'em_preparo';
+      cozinheiro = prompt('Digite o nome do cozinheiro:');
+      if (!cozinheiro) return;
+      status = 'em_preparo';
     } else if (novoStatusLabel === 'Pronto') {
       const confirmar = window.confirm('Tem certeza que deseja marcar como Pronto?');
       if (!confirmar) return;
-      novoStatus = 'pronto';
+      status = 'pronto';
+
+      // Aqui você pode puxar o cozinheiro já salvo, se não estiver guardando:
+      const pedido = pedidos.find(p => p.id === id);
+      cozinheiro = pedido?.cozinheiro || pedido?.nome_cozinheiro || '';
     }
+
+    console.log('Payload sendo enviado:', { status, cozinheiro }); // 👈 VERIFIQUE aqui
 
     try {
       const response = await axios.put(`http://localhost:5000/api/pedidos/${id}`, {
-        nome_cozinheiro,
+        status,
+        cozinheiro
       });
 
       if (response.status === 200) {
-        // Atualizar status localmente
         setPedidos(prevPedidos =>
           prevPedidos.map(p =>
-            p.id === id ? { ...p, status: novoStatus, nome_cozinheiro } : p
+            p.id === id ? { ...p, status, cozinheiro } : p
           )
         );
       }
@@ -77,48 +82,66 @@ const Cozinha = () => {
     }
   };
 
+
   const pedidosPorStatus = {
     Pendentes: pedidos.filter(p => p.status === 'pendente'),
     'Em Preparo': pedidos.filter(p => p.status === 'em_preparo'),
     Prontos: pedidos.filter(p => p.status === 'pronto'),
   };
 
-const renderPedidoCard = (pedido) => (
-  <div key={pedido.id} className="pedido-card">
-    <p><strong>Mesa:</strong> {pedido.mesa}</p>
-    <p><strong>Itens:</strong>{' '}
-      {Array.isArray(pedido.itens) && pedido.itens.length > 0 ? (
-        pedido.itens.map(item => (
-          <span key={item.id}>{item.nome_produto} ({item.quantidade}) </span>
-        ))
-      ) : (
-        <span>Nenhum item</span>
-      )}
-    </p>
-    <p>
-      <strong>Status:</strong>{' '}
-      <span className={`status-tag ${pedido.status}`}>
-        {pedido.status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
-      </span>
-    </p>
-    {pedido.nome_cozinheiro && (
-      <p><strong>Cozinheiro:</strong> {pedido.nome_cozinheiro}</p>
-    )}
+  const renderPedidoCard = (pedido) => (
+    <div key={pedido.id} className="pedido-card">
+      <p><strong>Mesa:</strong> {pedido.mesa}</p>
+      <p><strong>Itens:</strong></p>
+      <ul>
+        {Array.isArray(pedido.itens) && pedido.itens.length > 0 ? (
+          pedido.itens.map(item => (
+            <li key={item.item_id || item.id}>
+              🍽️ <strong>{item.nome_produto}</strong> ({item.quantidade})<br />
+              {item.observacao && (
+                <span className="observacao">📝 <em>{item.observacao}</em></span>
+              )}
+            </li>
+          ))
+        ) : (
+          <li>Nenhum item</li>
+        )}
+      </ul>
+      <p>
+        <strong>Hora:</strong>{' '}
+        {new Date(pedido.criado_em).toLocaleString('pt-BR', {
+          hour: '2-digit',
+          minute: '2-digit',
+          day: '2-digit',
+          month: '2-digit'
+        })
+        }
+      </p>
 
-    <div className="botoes">
-      {pedido.status === 'pendente' && (
-        <button className="btn amarelo" onClick={() => atualizarStatus(pedido.id, 'Em preparo')}>
-          Em preparo
-        </button>
+      <p>
+        <strong>Status:</strong>{' '}
+        <span className={`status-tag ${pedido.status}`}>
+          {pedido.status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+        </span>
+      </p>
+      {pedido.nome_cozinheiro && (
+        <p><strong>Cozinheiro:</strong> {pedido.nome_cozinheiro}</p>
       )}
-      {pedido.status === 'em_preparo' && (
-        <button className="btn verde" onClick={() => atualizarStatus(pedido.id, 'Pronto')}>
-          Pronto
-        </button>
-      )}
+
+      <div className="botoes">
+        {pedido.status === 'pendente' && (
+          <button className="btn amarelo" onClick={() => atualizarStatus(pedido.id, 'Em preparo')}>
+            Em preparo
+          </button>
+        )}
+        {pedido.status === 'em_preparo' && (
+          <button className="btn verde" onClick={() => atualizarStatus(pedido.id, 'Pronto')}>
+            Pronto
+          </button>
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
 
 
 

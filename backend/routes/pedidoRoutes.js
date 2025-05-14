@@ -28,11 +28,22 @@ router.get('/', async (req, res) => {
   }
 
   try {
-    const [result] = await pool.query(
+    const [pedidos] = await pool.query(
       'SELECT * FROM pedidos WHERE origem = ? AND status != "pago" ORDER BY criado_em ASC',
       [origem]
     );
-    res.status(200).json(result);
+
+    const pedidosComItens = await Promise.all(
+      pedidos.map(async pedido => {
+        const [itens] = await pool.query(
+          'SELECT * FROM itens_pedidos WHERE id_pedido = ?',
+          [pedido.id]
+        );
+        return { ...pedido, itens };
+      })
+    );
+
+    res.status(200).json(pedidosComItens);
   } catch (err) {
     console.error('Erro ao buscar pedidos:', err);
     res.status(500).json({ error: 'Erro ao buscar pedidos' });
