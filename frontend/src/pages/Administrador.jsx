@@ -59,6 +59,28 @@ const Administrador = () => {
     setEditingProduct(null);
   };
 
+  const finalizarExpediente = async () => {
+    const confirmar = window.confirm(
+      'Tem certeza que deseja finalizar o expediente?\nIsso apagará TODOS os pedidos!'
+    );
+
+    if (!confirmar) return;
+
+    try {
+      const response = await axios.post('http://localhost:5000/api/admin/finalizar-expediente', {
+        token: 'supersecreto123' // ⚠️ Substitua por token seguro real
+      });
+
+      if (response.data.success) {
+        alert(response.data.message);
+        // opcional: atualizar produtos ou outra ação
+      }
+    } catch (err) {
+      console.error('Erro ao finalizar expediente:', err);
+      alert('Erro ao limpar dados.');
+    }
+  };
+
   const groupedProducts = products.reduce((acc, product) => {
     const key = `${product.origem} - ${product.categoria}`;
     if (!acc[key]) acc[key] = [];
@@ -70,9 +92,14 @@ const Administrador = () => {
     <div className="admin-container">
       <div className="admin-header">
         <h1>Produtos</h1>
-        <button className="new-product-btn" onClick={handleNewProduct}>
-          Novo Produto
-        </button>
+        <div className="admin-actions">
+          <button className="new-product-btn" onClick={handleNewProduct}>
+            Novo Produto
+          </button>
+          <button className="finalizar-expediente-btn" onClick={finalizarExpediente}>
+            Finalizar Expediente 🔥
+          </button>
+        </div>
       </div>
 
       {showForm && (

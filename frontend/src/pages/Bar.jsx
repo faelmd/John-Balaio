@@ -54,8 +54,7 @@ const Bar = () => {
     <ul className="itens-lista">
       {itens.map(i => (
         <li key={i.id}>
-          {i.quantidade}× {i.nome} {i.preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-          {i.observacao && <span className="obs"> (Obs: {i.observacao})</span>}
+          {i.quantidade}× {i.nome_produto} {i.preco_unitario.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
         </li>
       ))}
     </ul>
@@ -63,8 +62,8 @@ const Bar = () => {
 
   const renderPedidoCard = (pedido) => {
     const proximoStatus =
-      pedido.status === 'pendente' ? 'Em preparo' :
-      pedido.status === 'em_preparo' ? 'Pronto' : null;
+      pedido.status === 'pendente' ? 'em_preparo' :
+      pedido.status === 'em_preparo' ? 'pronto' : null;
 
     // Display status capitalizado
     const displayStatus = {
@@ -76,13 +75,24 @@ const Bar = () => {
     return (
       <div key={pedido.id} className="pedido-card">
         <p><strong>Mesa:</strong> {pedido.mesa}</p>
-        <div>
-          <strong>Itens:</strong>
-          {renderItens(pedido.itens)}
-        </div>
+        {renderItens(pedido.itens)}
+
+        {pedido.observacao && (
+          <p><span className="observacao">📝 <em>{pedido.observacao}</em></span></p>
+        )}
+        <p>
+          <strong>Hora:</strong>{' '}
+          {new Date(pedido.criado_em).toLocaleString('pt-BR', {
+            hour: '2-digit',
+            minute: '2-digit',
+            day: '2-digit',
+            month: '2-digit'
+          })
+          }
+        </p>
         <p>
           <strong>Status:</strong>{' '}
-          <span className={`status-tag ${pedido.status.replace('_','-')}`}>
+          <span className={`status-tag ${pedido.status.replace('_', '-')}`}>
             {displayStatus}
           </span>
         </p>

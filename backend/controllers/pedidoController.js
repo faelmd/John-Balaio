@@ -2,7 +2,7 @@ const db = require('../db');
 
 // Criar um novo pedido
 exports.criarPedido = async (req, res) => {
-    const { mesa, itens } = req.body;
+    const { mesa, itens, observacao } = req.body;
 
     if (!mesa || typeof mesa !== 'number' || !Array.isArray(itens) || itens.length === 0) {
         return res.status(400).json({ message: 'Mesa e itens são obrigatórios.' });
@@ -13,28 +13,38 @@ exports.criarPedido = async (req, res) => {
         await connection.beginTransaction();
 
         const [pedidoResult] = await connection.query(
-            'INSERT INTO pedidos (mesa, status, origem) VALUES (?, ?, ?)',
-            [mesa, 'pendente', 'cozinha'] // ou use o valor dinâmico do req.body.origem
+            'INSERT INTO pedidos (mesa, status, origem, observacao) VALUES (?, ?, ?, ?)',
+            [mesa, 'pendente', 'cozinha', observacao || null] // ou use o valor dinâmico do req.body.origem
         );
         const pedidoId = pedidoResult.insertId;
 
-        const itemQueries = itens.map(item => {
-            if (!item.nome_produto || !item.origem) {
-                throw new Error('Cada item deve ter nome_produto e origem definidos.');
+        // Atualizado
+        const itemQueries = itens.map(async item => {
+            if (!item.nome_produto) {
+                throw new Error('Cada item deve ter nome_produto definido.');
+            }
+
+            // Buscar origem a partir da tabela de produtos
+            const [[produtoResult]] = await connection.query(
+                'SELECT origem FROM produtos WHERE nome = ?',
+                [item.nome_produto]
+            );
+
+            if (!produtoResult) {
+                throw new Error(`Produto "${item.nome_produto}" não encontrado na base.`);
             }
 
             return connection.query(
                 `INSERT INTO itens_pedidos 
-                 (id_pedido, nome_produto, quantidade, preco_unitario, observacao, pago, origem) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+     (id_pedido, nome_produto, quantidade, preco_unitario, pago, origem) 
+     VALUES (?, ?, ?, ?, ?, ?)`,
                 [
                     pedidoId,
                     item.nome_produto,
                     item.quantidade || 1,
                     item.preco_unitario || 0.0,
-                    item.observacao || '',
                     0,
-                    item.origem
+                    produtoResult.origem
                 ]
             );
         });

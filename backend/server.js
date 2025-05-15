@@ -8,6 +8,7 @@ const pedidoRoutes = require('./routes/pedidoRoutes');
 const caixaRoutes = require('./routes/caixaRoutes');
 const barRoutes = require('./routes/barRoutes');
 const cozinhaRoutes = require('./routes/cozinhaRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 app.use(cors());
@@ -22,7 +23,7 @@ app.use('/api/pedidos', pedidoRoutes);
 app.use('/api/caixa', caixaRoutes);
 app.use('/api/bar', barRoutes);
 app.use('/api/cozinha', cozinhaRoutes);
-
+app.use('/api/admin', adminRoutes);
 
 // Iniciar o servidor
 const PORT = process.env.PORT || 5000;

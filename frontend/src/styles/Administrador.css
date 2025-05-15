@@ -83,3 +83,24 @@
   flex-wrap: wrap;
   gap: 16px;
 }
+
+.admin-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.finalizar-expediente-btn {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.finalizar-expediente-btn:hover {
+  background-color: #c0392b;
+}

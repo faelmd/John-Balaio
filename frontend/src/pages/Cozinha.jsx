@@ -98,15 +98,15 @@ const Cozinha = () => {
           pedido.itens.map(item => (
             <li key={item.item_id || item.id}>
               🍽️ <strong>{item.nome_produto}</strong> ({item.quantidade})<br />
-              {item.observacao && (
-                <span className="observacao">📝 <em>{item.observacao}</em></span>
-              )}
             </li>
           ))
         ) : (
           <li>Nenhum item</li>
         )}
       </ul>
+      {pedido.observacao && (
+                <p><span className="observacao">📝 <em>{pedido.observacao}</em></span></p>
+              )}
       <p>
         <strong>Hora:</strong>{' '}
         {new Date(pedido.criado_em).toLocaleString('pt-BR', {

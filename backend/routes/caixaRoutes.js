@@ -95,7 +95,7 @@ router.get('/pedidos/itens/:pedidoId', async (req, res) => {
   const { pedidoId } = req.params;
   try {
     const [itens] = await pool.query(
-      'SELECT id, nome, quantidade, preco, observacao, pago FROM itens_pedidos WHERE pedido_id = ? ORDER BY id ASC',
+      'SELECT id, nome, quantidade, preco, pago FROM itens_pedidos WHERE pedido_id = ? ORDER BY id ASC',
       [pedidoId]
     );
     res.status(200).json(itens);

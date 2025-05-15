@@ -15,13 +15,13 @@ router.get('/', async (req, res) => {
         i.id AS item_id,
         i.nome_produto,
         i.quantidade,
-        i.observacao,
-        p.origem,
+        p.observacao,
+        i.origem,
         p.status,
         i.pago
       FROM pedidos p
       JOIN itens_pedidos i ON p.id = i.id_pedido
-      WHERE p.origem = 'cozinha' AND i.pago = 0
+      WHERE i.origem = 'cozinha' AND i.pago = 0
       ORDER BY p.criado_em ASC
     `);
 
@@ -33,6 +33,7 @@ router.get('/', async (req, res) => {
           pedido_id: item.id_pedido,
           mesa: item.mesa,
           criado_em: item.criado_em,
+          observacao: item.observacao || "",
           itens: []
         };
       }

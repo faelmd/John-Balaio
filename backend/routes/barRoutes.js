@@ -11,24 +11,26 @@ router.get('/', async (req, res) => {
   }
 
   try {
-    // Busca pedidos
     const [pedidos] = await pool.query(
-      'SELECT id, mesa, status, criado_em FROM pedidos WHERE origem = ? ORDER BY criado_em ASC',
-      [origem]
+      'SELECT id, mesa, status, criado_em FROM pedidos ORDER BY criado_em ASC'
     );
 
-    // Aninha itens em cada pedido
     const pedidosComItens = await Promise.all(
       pedidos.map(async pedido => {
         const [itens] = await pool.query(
-          'SELECT id, nome, quantidade, preco, observacao, pago FROM itens_pedidos WHERE pedido_id = ? ORDER BY id ASC',
+          'SELECT id, nome_produto, quantidade, preco_unitario, pago, origem FROM itens_pedidos WHERE id_pedido = ? AND origem = "bar"',
           [pedido.id]
         );
-        return { ...pedido, itens };
+
+        // Apenas incluir pedidos que têm itens de origem 'bar'
+        if (itens.length > 0) {
+          return { ...pedido, itens };
+        }
+        return null;
       })
     );
 
-    res.status(200).json(pedidosComItens);
+    res.status(200).json(pedidosComItens.filter(Boolean));
   } catch (err) {
     console.error('Erro ao buscar pedidos do bar:', err);
     res.status(500).json({ error: 'Erro ao buscar pedidos do bar' });
