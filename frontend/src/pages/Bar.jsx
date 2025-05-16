@@ -21,6 +21,10 @@ const Bar = () => {
     }
   }, [navigate]);
 
+    useEffect(() => {
+      document.title = 'John Balaio | Bar';
+    }, []);
+
   const fetchPedidos = async () => {
     setLoading(true);
     try {

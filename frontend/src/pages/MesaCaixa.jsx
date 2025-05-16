@@ -14,33 +14,17 @@ const MesaCaixa = () => {
   const fetchItens = useCallback(async () => {
     setLoading(true);
     try {
-      const responsePedidos = await axios.get('http://localhost:5000/api/pedidos?origem=caixa');
-      const pedidosDaMesa = responsePedidos.data.filter(p => p.mesa === parseInt(mesaId));
+      const response = await axios.get('http://localhost:5000/api/pedidos'); // ✅ agora backend já filtra status = "pronto"
+      const pedidosDaMesa = response.data.filter(p => p.mesa === parseInt(mesaId));
 
-      if (!pedidosDaMesa.length) {
+      if (pedidosDaMesa.length === 0) {
         setItensPorPedido({});
         return;
       }
 
-      const responsesItens = await Promise.all(
-        pedidosDaMesa.map(pedido =>
-          axios.get(`http://localhost:5000/api/pedidos/itens/${pedido.id}`)
-        )
-      );
-
-      const todosItens = responsesItens.flatMap((res, i) => {
-        const pedidoId = pedidosDaMesa[i].id;
-        return res.data
-          .filter(item => !item.pago)
-          .map(item => ({ ...item, pedido_id: pedidoId }));
-      });
-
       const agrupados = {};
-      todosItens.forEach(item => {
-        if (!agrupados[item.pedido_id]) {
-          agrupados[item.pedido_id] = [];
-        }
-        agrupados[item.pedido_id].push(item);
+      pedidosDaMesa.forEach(pedido => {
+        agrupados[pedido.id] = pedido.itens || [];
       });
 
       setItensPorPedido(agrupados);
@@ -66,7 +50,7 @@ const MesaCaixa = () => {
     const todosItens = Object.values(itensPorPedido).flat();
     const selecionadosItens = todosItens.filter(item => selecionados.includes(item.id));
     return selecionadosItens
-      .reduce((total, item) => total + parseFloat(item.preco) * item.quantidade, 0)
+      .reduce((total, item) => total + parseFloat(item.preco_unitario) * item.quantidade, 0)
       .toFixed(2);
   };
 
@@ -139,7 +123,7 @@ const MesaCaixa = () => {
                         checked={selecionados.includes(item.id)}
                         onChange={() => toggleSelecionado(item.id)}
                       />
-                      <strong>{item.nome}</strong> - {item.quantidade}x R$ {item.preco}
+                      <strong>{item.nome_produto}</strong> - {item.quantidade}x R$ {item.preco_unitario}
                       {item.observacao && <div className="obs">Obs: {item.observacao}</div>}
                     </label>
                   </li>

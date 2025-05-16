@@ -2,8 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 
-// Rota: GET /api/cozinha
-// Lista todos os itens com origem 'cozinha' e que ainda não foram pagos
+// GET /api/cozinha
 router.get('/', async (req, res) => {
   console.log("🔍 Rota /api/cozinha foi chamada!");
   try {
@@ -25,31 +24,30 @@ router.get('/', async (req, res) => {
       ORDER BY p.criado_em ASC
     `);
 
-    // Agrupar os itens por pedido
+    // Agrupando por pedido
     const pedidosAgrupados = {};
-    rows.forEach(item => {
+    for (const item of rows) {
       if (!pedidosAgrupados[item.id_pedido]) {
         pedidosAgrupados[item.id_pedido] = {
-          pedido_id: item.id_pedido,
+          id: item.id_pedido,
           mesa: item.mesa,
           criado_em: item.criado_em,
-          observacao: item.observacao || "",
+          observacao: item.observacao || '',
+          status: item.status,
           itens: []
         };
       }
 
       pedidosAgrupados[item.id_pedido].itens.push({
         item_id: item.item_id,
-        nome: item.nome_produto,
+        nome_produto: item.nome_produto,
         quantidade: item.quantidade,
-        observacao: item.observacao || "", // 🔍 Garante que nunca venha null
-        origem: item.origem,
-        status: item.status,
-        pago: item.pago
+        pago: item.pago,
+        origem: item.origem
       });
-    });
+    }
 
-    res.json(Object.values(pedidosAgrupados));
+    res.status(200).json(Object.values(pedidosAgrupados));
   } catch (err) {
     console.error('🚨 Erro ao buscar pedidos da cozinha:', err);
     res.status(500).json({ error: 'Erro ao buscar pedidos da cozinha' });

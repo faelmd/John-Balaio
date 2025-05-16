@@ -46,45 +46,26 @@ router.get('/mesas-completas', async (req, res) => {
 // GET /pedidos?origem=cozinha|bar - Listar pedidos por origem agrupados por mesa
 // ---------------------------
 router.get('/pedidos', async (req, res) => {
-  const { origem } = req.query;
-
-  if (!origem || (origem !== 'cozinha' && origem !== 'bar' && origem !== 'caixa')) {
-    return res.status(400).json({ error: 'Origem inválida. Use "cozinha", "bar" ou "caixa".' });
-  }
-
   try {
-    const statusCond = origem === 'caixa' ? '!= "pronto"' : 'IN ("pendente", "em preparo")';
     const [pedidos] = await pool.query(
-      `SELECT id, mesa, status, nome_cozinheiro, criado_em FROM pedidos WHERE origem = ? AND status ${statusCond} ORDER BY criado_em ASC`,
-      [origem]
+      `SELECT * FROM pedidos WHERE status = "pronto" ORDER BY criado_em ASC`
     );
 
-    const pedidosComItens = await Promise.all(
+    const pedidosComItensPendentes = await Promise.all(
       pedidos.map(async pedido => {
         const [itens] = await pool.query(
-          'SELECT id, nome, quantidade, preco, observacao, pago FROM itens_pedidos WHERE pedido_id = ? ORDER BY id ASC',
+          `SELECT * FROM itens_pedidos WHERE id_pedido = ? AND pago = 0`,
           [pedido.id]
         );
-        return { ...pedido, itens };
+        return itens.length > 0 ? { ...pedido, itens } : null;
       })
     );
 
-    if (origem === 'caixa') {
-      res.status(200).json(pedidosComItens);
-    } else {
-      const agrupadosPorMesa = {};
-      for (const pedido of pedidosComItens) {
-        if (!agrupadosPorMesa[pedido.mesa]) {
-          agrupadosPorMesa[pedido.mesa] = [];
-        }
-        agrupadosPorMesa[pedido.mesa].push(pedido);
-      }
-
-      res.status(200).json(agrupadosPorMesa);
-    }
+    const pedidosValidos = pedidosComItensPendentes.filter(Boolean);
+    res.status(200).json(pedidosValidos);
   } catch (err) {
-    console.error('Erro ao buscar pedidos por origem:', err);
-    res.status(500).json({ error: 'Erro ao buscar pedidos por origem' });
+    console.error('❌ Erro ao buscar pedidos prontos:', err);
+    res.status(500).json({ error: 'Erro ao buscar pedidos prontos' });
   }
 });
 
@@ -95,7 +76,7 @@ router.get('/pedidos/itens/:pedidoId', async (req, res) => {
   const { pedidoId } = req.params;
   try {
     const [itens] = await pool.query(
-      'SELECT id, nome, quantidade, preco, pago FROM itens_pedidos WHERE pedido_id = ? ORDER BY id ASC',
+      'SELECT id, nome_produto, quantidade, preco_unitario, pago FROM itens_pedidos WHERE pedido_id = ? ORDER BY id ASC',
       [pedidoId]
     );
     res.status(200).json(itens);
@@ -156,7 +137,7 @@ router.get('/mesa/:mesa', async (req, res) => {
     const pedidosComItens = await Promise.all(
       pedidos.map(async pedido => {
         const [itens] = await pool.query(
-          'SELECT id, nome, quantidade, preco, observacao, pago FROM itens_pedidos WHERE pedido_id = ? ORDER BY id ASC',
+          'SELECT id, nome_produto, quantidade, preco_unitario, pago FROM itens_pedidos WHERE pedido_id = ? ORDER BY id ASC',
           [pedido.id]
         );
         return { ...pedido, itens };
@@ -167,6 +148,51 @@ router.get('/mesa/:mesa', async (req, res) => {
   } catch (err) {
     console.error('Erro ao buscar pedidos da mesa:', err);
     res.status(500).json({ error: 'Erro ao buscar pedidos da mesa' });
+  }
+});
+
+router.post('/pagar-dividido/:mesa', async (req, res) => {
+  const { mesa } = req.params;
+  const { partes } = req.body;
+
+  // ⚠️ Validação
+  if (!mesa || isNaN(mesa)) {
+    return res.status(400).json({ error: 'Número da mesa inválido.' });
+  }
+
+  if (!partes || isNaN(partes) || partes < 2) {
+    return res.status(400).json({ error: 'Quantidade de partes deve ser 2 ou mais.' });
+  }
+
+  try {
+    // 🔍 Buscar todos os itens não pagos da mesa
+    const [itens] = await pool.query(`
+      SELECT i.preco_unitario, i.quantidade
+      FROM itens_pedidos i
+      INNER JOIN pedidos p ON i.id_pedido = p.id
+      WHERE p.mesa = ? AND i.pago = 0
+    `, [mesa]);
+
+    if (itens.length === 0) {
+      return res.status(400).json({ error: 'Nenhum item pendente para esta mesa.' });
+    }
+
+    // 💰 Calcular total
+    const total = itens.reduce((acc, item) => {
+      return acc + (parseFloat(item.preco_unitario) * item.quantidade);
+    }, 0);
+
+    const valorPorParte = (total / partes).toFixed(2);
+
+    res.status(200).json({
+      success: true,
+      total: total.toFixed(2),
+      partes: parseInt(partes),
+      valor_por_parte: valorPorParte
+    });
+  } catch (err) {
+    console.error('Erro ao dividir conta:', err);
+    res.status(500).json({ error: 'Erro ao dividir conta.' });
   }
 });
 

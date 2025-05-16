@@ -91,7 +91,7 @@ router.put('/:id', async (req, res) => {
 
   try {
     await pool.query(
-      'UPDATE pedidos SET status = ?, cozinheiro = ? WHERE id = ?',
+      'UPDATE pedidos SET status = ?, nome_cozinheiro = ? WHERE id = ?',
       [status, cozinheiro, id]
     );
     res.status(200).json({ message: 'Pedido atualizado com sucesso!' });
