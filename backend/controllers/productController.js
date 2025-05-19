@@ -30,7 +30,7 @@ const createProduct = async (req, res) => {
             return res.status(400).json({ error: 'Preço inválido' });
         }
 
-        const imagem = req.file ? req.file.filename : null;
+        const imagem = req.file ? req.file.filename : 'sem-imagem.png';
 
         const query = 'INSERT INTO produtos (nome, descricao, preco, imagem, disponivel, origem, categoria) VALUES (?, ?, ?, ?, ?, ?, ?)';
         const [result] = await db.query(query, [
@@ -52,28 +52,33 @@ const createProduct = async (req, res) => {
 
 // PUT - Editar produto
 const updateProduct = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { nome, descricao, preco, origem, categoria } = req.body;
-        const imagem = req.file ? req.file.filename : null;
+  try {
+    const { id } = req.params;
+    const { nome, descricao, preco, origem, categoria } = req.body;
+    const imagem = req.file ? req.file.filename : null;
 
-        let query = 'UPDATE produtos SET nome=?, descricao=?, preco=?, origem=?, categoria=?';
-        const params = [nome, descricao, preco, origem, categoria];
-
-        if (imagem) {
-            query += ', imagem=?';
-            params.push(imagem);
-        }
-
-        query += ' WHERE id=?';
-        params.push(id);
-
-        await db.query(query, params);
-        res.json({ message: 'Produto atualizado com sucesso' });
-    } catch (err) {
-        console.error('Erro ao atualizar produto:', err);
-        res.status(500).json({ error: 'Erro ao atualizar produto' });
+    const parsedPreco = parseFloat(preco);
+    if (!nome || !descricao || !origem || !categoria || isNaN(parsedPreco)) {
+      return res.status(400).json({ error: 'Campos inválidos ou ausentes' });
     }
+
+    let query = 'UPDATE produtos SET nome=?, descricao=?, preco=?, origem=?, categoria=?';
+    const params = [nome, descricao, parsedPreco, origem, categoria];
+
+    if (imagem) {
+      query += ', imagem=?';
+      params.push(imagem);
+    }
+
+    query += ' WHERE id=?';
+    params.push(id);
+
+    await db.query(query, params);
+    res.json({ message: 'Produto atualizado com sucesso' });
+  } catch (err) {
+    console.error('Erro ao atualizar produto:', err);
+    res.status(500).json({ error: 'Erro ao atualizar produto', detalhe: err.message });
+  }
 };
 
 // PATCH - Atualizar status (disponível/suspenso)

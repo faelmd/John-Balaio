@@ -141,7 +141,7 @@ router.get('/nao-pagos/:pedidoId', async (req, res) => {
 // POST /itens - Adicionar item ao pedido
 // ---------------------------
 router.post('/itens', async (req, res) => {
-  const { pedido_id, nome, quantidade, preco} = req.body;
+  const { pedido_id, nome, quantidade, preco } = req.body;
 
   if (!pedido_id || !nome || !quantidade || preco == null) {
     return res.status(400).json({ error: 'Dados obrigatórios faltando' });
@@ -220,6 +220,7 @@ router.post('/pagar/:mesa', async (req, res) => {
   const { mesa } = req.params;
 
   try {
+    // 1. Verificar se ainda há pedidos não prontos
     const [pendentes] = await pool.query(
       'SELECT COUNT(*) AS pendentes FROM pedidos WHERE mesa = ? AND status != "pronto"',
       [mesa]
@@ -229,12 +230,24 @@ router.post('/pagar/:mesa', async (req, res) => {
       return res.status(400).json({ error: 'Ainda há pedidos pendentes ou em preparo nesta mesa.' });
     }
 
+    // 2. Atualizar pedidos para 'pago'
     await pool.query(
       'UPDATE pedidos SET status = "pago" WHERE mesa = ?',
       [mesa]
     );
 
+    // ✅ 3. Atualizar ITENS para 'pago = TRUE'
+    await pool.query(`
+      UPDATE itens_pedidos 
+      SET pago = TRUE 
+      WHERE pedido_id IN (
+        SELECT id FROM pedidos WHERE mesa = ? AND status = "pago"
+      )
+    `, [mesa]);
+
+    // 4. Resposta OK
     res.status(200).json({ success: true, message: 'Pedidos pagos com sucesso' });
+
   } catch (err) {
     console.error('Erro ao pagar pedidos:', err);
     res.status(500).json({ error: 'Erro ao marcar pedidos como pagos' });
@@ -246,13 +259,30 @@ router.post('/pagar/:mesa', async (req, res) => {
 // ---------------------------
 router.get('/historico-pedidos', async (req, res) => {
   try {
+    // 1. Buscar todos os pedidos com status 'pago'
     const [pedidos] = await pool.query(
       'SELECT * FROM pedidos WHERE status = "pago" ORDER BY criado_em DESC'
     );
-    res.status(200).json(pedidos);
+
+    // 2. Para cada pedido, buscar os itens associados
+    const pedidosComItens = await Promise.all(
+      pedidos.map(async (pedido) => {
+        const [itens] = await pool.query(
+          'SELECT id, nome, quantidade, preco, pago FROM itens_pedidos WHERE pedido_id = ? ORDER BY id ASC',
+          [pedido.id]
+        );
+        return { ...pedido, itens };
+      })
+    );
+
+    // 3. Enviar para o front já agrupado
+    res.status(200).json(pedidosComItens);
   } catch (err) {
     console.error('Erro ao buscar histórico de pedidos:', err);
-    res.status(500).json({ error: 'Erro ao buscar histórico de pedidos' });
+    res.status(500).json({
+      error: 'Erro ao buscar histórico de pedidos',
+      detalhe: err.message,
+    });
   }
 });
 

@@ -21,9 +21,9 @@ const Bar = () => {
     }
   }, [navigate]);
 
-    useEffect(() => {
-      document.title = 'John Balaio | Bar';
-    }, []);
+  useEffect(() => {
+    document.title = 'John Balaio | Bar';
+  }, []);
 
   const fetchPedidos = async () => {
     setLoading(true);
@@ -54,22 +54,11 @@ const Bar = () => {
     }
   };
 
-  const renderItens = (itens) => (
-    <ul className="itens-lista">
-      {itens.map(i => (
-        <li key={i.id}>
-          {i.quantidade}× {i.nome_produto} {i.preco_unitario.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-        </li>
-      ))}
-    </ul>
-  );
-
   const renderPedidoCard = (pedido) => {
     const proximoStatus =
       pedido.status === 'pendente' ? 'em_preparo' :
-      pedido.status === 'em_preparo' ? 'pronto' : null;
+        pedido.status === 'em_preparo' ? 'pronto' : null;
 
-    // Display status capitalizado
     const displayStatus = {
       pendente: 'Pendente',
       em_preparo: 'Em preparo',
@@ -79,8 +68,18 @@ const Bar = () => {
     return (
       <div key={pedido.id} className="pedido-card">
         <p><strong>Mesa:</strong> {pedido.mesa}</p>
-        {renderItens(pedido.itens)}
-
+        <p><strong>Itens:</strong></p>
+        <ul>
+          {Array.isArray(pedido.itens) && pedido.itens.length > 0 ? (
+            pedido.itens.map(item => (
+              <li key={item.id || item.item_id}>
+                🍽️ <strong>{item.nome_produto}</strong> ({item.quantidade})
+              </li>
+            ))
+          ) : (
+            <li>Nenhum item</li>
+          )}
+        </ul>
         {pedido.observacao && (
           <p><span className="observacao">📝 <em>{pedido.observacao}</em></span></p>
         )}
@@ -91,23 +90,24 @@ const Bar = () => {
             minute: '2-digit',
             day: '2-digit',
             month: '2-digit'
-          })
-          }
+          })}
         </p>
+
         <p>
           <strong>Status:</strong>{' '}
           <span className={`status-tag ${pedido.status.replace('_', '-')}`}>
             {displayStatus}
           </span>
         </p>
+
         {proximoStatus && (
           <div className="botoes">
             <button
               type="button"
-              className={`btn ${proximoStatus === 'Em preparo' ? 'amarelo' : 'verde'}`}
+              className={`btn ${proximoStatus === 'em_preparo' ? 'amarelo' : 'verde'}`}
               onClick={() => atualizarStatus(pedido.id, proximoStatus)}
             >
-              {proximoStatus}
+              {displayStatus === 'Pendente' ? 'Em preparo' : 'Pronto'}
             </button>
           </div>
         )}

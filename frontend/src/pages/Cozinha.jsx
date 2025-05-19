@@ -105,8 +105,8 @@ const Cozinha = () => {
         )}
       </ul>
       {pedido.observacao && (
-                <p><span className="observacao">📝 <em>{pedido.observacao}</em></span></p>
-              )}
+        <p><span className="observacao">📝 <em>{pedido.observacao}</em></span></p>
+      )}
       <p>
         <strong>Hora:</strong>{' '}
         {new Date(pedido.criado_em).toLocaleString('pt-BR', {
@@ -142,8 +142,6 @@ const Cozinha = () => {
       </div>
     </div>
   );
-
-
 
   return (
     <div className="cozinha-container">
