@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react'; // ⬅ adiciona useCallback
+// src/pages/MesaCaixa.jsx
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import '../styles/MesaCaixa.css';
@@ -6,39 +7,27 @@ import '../styles/MesaCaixa.css';
 const MesaCaixa = () => {
   const { mesaId } = useParams();
   const navigate = useNavigate();
-  const [itensPorPedido, setItensPorPedido] = useState({});
+  const [itens, setItens] = useState([]);
   const [selecionados, setSelecionados] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ⬇️ encapsula com useCallback para não recriar a função a cada render
   const fetchItens = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:5000/api/pedidos'); // ✅ agora backend já filtra status = "pronto"
-      const pedidosDaMesa = response.data.filter(p => p.mesa === parseInt(mesaId));
-
-      if (pedidosDaMesa.length === 0) {
-        setItensPorPedido({});
-        return;
-      }
-
-      const agrupados = {};
-      pedidosDaMesa.forEach(pedido => {
-        agrupados[pedido.id] = pedido.itens || [];
-      });
-
-      setItensPorPedido(agrupados);
+      const { data } = await axios.get(`http://localhost:5000/api/caixa/mesa/${mesaId}`);
+      setItens(data);
     } catch (err) {
       console.error('Erro ao buscar itens:', err);
+      alert('Erro ao buscar itens da mesa.');
     } finally {
       setLoading(false);
     }
-  }, [mesaId]); // ⬅ mesaId como dependência
+  }, [mesaId]);
 
   useEffect(() => {
     document.title = `Mesa ${mesaId} | Caixa`;
-    fetchItens(); // ⬅ agora sem erro de dependência
-  }, [mesaId, fetchItens]); // ⬅ fetchItens incluso
+    fetchItens();
+  }, [mesaId, fetchItens]);
 
   const toggleSelecionado = (itemId) => {
     setSelecionados(prev =>
@@ -47,8 +36,7 @@ const MesaCaixa = () => {
   };
 
   const calcularTotal = () => {
-    const todosItens = Object.values(itensPorPedido).flat();
-    const selecionadosItens = todosItens.filter(item => selecionados.includes(item.id));
+    const selecionadosItens = itens.filter(item => selecionados.includes(item.id));
     return selecionadosItens
       .reduce((total, item) => total + parseFloat(item.preco_unitario) * item.quantidade, 0)
       .toFixed(2);
@@ -56,48 +44,28 @@ const MesaCaixa = () => {
 
   const confirmarPagamento = async () => {
     try {
-      await axios.put('http://localhost:5000/api/pedidos/pagar', {
+      await axios.put('http://localhost:5000/api/caixa/pagar', {
         itemIds: selecionados,
       });
-      alert('Pagamento confirmado!');
-      atualizarItens();
+      alert('Pagamento registrado.');
+      setSelecionados([]);
+      fetchItens();
     } catch (err) {
-      console.error('Erro ao confirmar pagamento:', err);
-      alert('Erro ao confirmar pagamento.');
+      console.error('Erro ao pagar:', err);
+      alert('Erro ao registrar pagamento.');
     }
   };
 
   const pagarTudo = async () => {
     try {
-      await axios.post(`http://localhost:5000/api/pedidos/pagar/${mesaId}`);
+      await axios.post(`http://localhost:5000/api/caixa/pagar/${mesaId}`);
       alert('Conta paga por completo!');
-      atualizarItens();
+      setSelecionados([]);
+      fetchItens();
     } catch (err) {
       console.error('Erro ao pagar tudo:', err);
-      alert('Erro ao pagar a conta.');
+      alert('Erro ao pagar conta completa.');
     }
-  };
-
-  const dividirConta = async () => {
-    const partes = parseInt(prompt("Em quantas partes deseja dividir a conta?"));
-    if (isNaN(partes) || partes <= 1) {
-      alert('Informe um número válido maior que 1.');
-      return;
-    }
-
-    try {
-      await axios.post(`http://localhost:5000/api/pedidos/pagar-dividido/${mesaId}`, { partes });
-      alert(`Conta dividida em ${partes} partes.`);
-      atualizarItens();
-    } catch (err) {
-      console.error('Erro ao dividir conta:', err);
-      alert('Erro ao dividir conta.');
-    }
-  };
-
-  const atualizarItens = async () => {
-    setSelecionados([]);
-    await fetchItens();
   };
 
   return (
@@ -107,30 +75,29 @@ const MesaCaixa = () => {
 
       {loading ? (
         <p>Carregando itens...</p>
-      ) : Object.keys(itensPorPedido).length === 0 ? (
-        <p>Todos os itens já foram pagos.</p>
+      ) : itens.length === 0 ? (
+        <p>Todos os itens foram pagos.</p>
       ) : (
-        <div>
-          {Object.entries(itensPorPedido).map(([pedidoId, itens]) => (
-            <div key={pedidoId} className="pedido-bloco">
-              <h3>Pedido #{pedidoId}</h3>
-              <ul className="itens-lista">
-                {itens.map(item => (
-                  <li key={item.id} className={`item ${selecionados.includes(item.id) ? 'selecionado' : ''}`}>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={selecionados.includes(item.id)}
-                        onChange={() => toggleSelecionado(item.id)}
-                      />
-                      <strong>{item.nome_produto}</strong> - {item.quantidade}x R$ {item.preco_unitario}
-                      {item.observacao && <div className="obs">Obs: {item.observacao}</div>}
-                    </label>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+        <>
+          <ul className="itens-lista">
+            {itens.map(item => (
+              <li
+                key={item.id}
+                className={`item ${item.pago ? 'pago' : ''} ${selecionados.includes(item.id) ? 'selecionado' : ''}`}
+              >
+                <label>
+                  <input
+                    type="checkbox"
+                    disabled={item.pago} // ⛔ não permite marcar se já foi pago
+                    checked={selecionados.includes(item.id)}
+                    onChange={() => toggleSelecionado(item.id)}
+                  />
+                  <strong>{item.nome_produto}</strong> - {item.quantidade}x R$ {item.preco_unitario}
+                  {item.pago && <span className="status pago-tag">✔️ Pago</span>}
+                </label>
+              </li>
+            ))}
+          </ul>
 
           <div className="total">
             Total Selecionado: R$ {calcularTotal()}
@@ -147,11 +114,7 @@ const MesaCaixa = () => {
           <button className="pagar-tudo" onClick={pagarTudo}>
             Pagar Conta Inteira
           </button>
-
-          <button className="dividir-conta" onClick={dividirConta}>
-            Dividir Conta
-          </button>
-        </div>
+        </>
       )}
     </div>
   );

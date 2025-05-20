@@ -53,30 +53,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-
-// ---------------------------
-// PUT /pagar - Marcar itens como pagos
-// ---------------------------
-router.put('/pagar', async (req, res) => {
-  const { itemIds } = req.body;
-
-  if (!Array.isArray(itemIds) || itemIds.length === 0) {
-    return res.status(400).json({ error: 'Lista de itens inválida' });
-  }
-
-  try {
-    const placeholders = itemIds.map(() => '?').join(',');
-    await pool.query(
-      `UPDATE itens_pedidos SET pago = TRUE WHERE id IN (${placeholders})`,
-      itemIds
-    );
-    res.status(200).json({ message: 'Itens atualizados com sucesso!' });
-  } catch (err) {
-    console.error('Erro ao atualizar itens:', err);
-    res.status(500).json({ error: 'Erro ao atualizar itens' });
-  }
-});
-
 // ---------------------------
 // PUT /:id - Atualizar status e cozinheiro de um pedido
 // ---------------------------
@@ -98,42 +74,6 @@ router.put('/:id', async (req, res) => {
   } catch (err) {
     console.error('Erro ao atualizar pedido:', err);
     res.status(500).json({ error: 'Erro ao atualizar pedido' });
-  }
-});
-
-// ---------------------------
-// GET /itens/:pedidoId - Listar todos os itens de um pedido
-// ---------------------------
-router.get('/itens/:pedidoId', async (req, res) => {
-  const { pedidoId } = req.params;
-
-  try {
-    const [itens] = await pool.query(
-      'SELECT id, nome_produto, quantidade, preco_unitario, pago FROM itens_pedidos WHERE pedido_id = ? ORDER BY id ASC',
-      [pedidoId]
-    );
-    res.status(200).json(itens);
-  } catch (err) {
-    console.error('Erro ao buscar itens:', err);
-    res.status(500).json({ error: 'Erro ao buscar itens do pedido' });
-  }
-});
-
-// ---------------------------
-// GET /nao-pagos/:pedidoId - Listar itens não pagos
-// ---------------------------
-router.get('/nao-pagos/:pedidoId', async (req, res) => {
-  const { pedidoId } = req.params;
-
-  try {
-    const [itens] = await pool.query(
-      'SELECT id, nome, quantidade, preco, pago FROM itens_pedidos WHERE pedido_id = ? AND pago = FALSE ORDER BY id ASC',
-      [pedidoId]
-    );
-    res.status(200).json(itens);
-  } catch (err) {
-    console.error('Erro ao buscar itens não pagos:', err);
-    res.status(500).json({ error: 'Erro ao buscar itens não pagos' });
   }
 });
 
@@ -210,47 +150,6 @@ router.get('/pedidos-prontos', async (req, res) => {
   } catch (err) {
     console.error('Erro ao buscar pedidos prontos:', err);
     res.status(500).json({ error: 'Erro ao buscar pedidos prontos' });
-  }
-});
-
-// ---------------------------
-// POST /pagar/:mesa - Finalizar pedidos de uma mesa
-// ---------------------------
-router.post('/pagar/:mesa', async (req, res) => {
-  const { mesa } = req.params;
-
-  try {
-    // 1. Verificar se ainda há pedidos não prontos
-    const [pendentes] = await pool.query(
-      'SELECT COUNT(*) AS pendentes FROM pedidos WHERE mesa = ? AND status != "pronto"',
-      [mesa]
-    );
-
-    if (pendentes[0].pendentes > 0) {
-      return res.status(400).json({ error: 'Ainda há pedidos pendentes ou em preparo nesta mesa.' });
-    }
-
-    // 2. Atualizar pedidos para 'pago'
-    await pool.query(
-      'UPDATE pedidos SET status = "pago" WHERE mesa = ?',
-      [mesa]
-    );
-
-    // ✅ 3. Atualizar ITENS para 'pago = TRUE'
-    await pool.query(`
-      UPDATE itens_pedidos 
-      SET pago = TRUE 
-      WHERE pedido_id IN (
-        SELECT id FROM pedidos WHERE mesa = ? AND status = "pago"
-      )
-    `, [mesa]);
-
-    // 4. Resposta OK
-    res.status(200).json({ success: true, message: 'Pedidos pagos com sucesso' });
-
-  } catch (err) {
-    console.error('Erro ao pagar pedidos:', err);
-    res.status(500).json({ error: 'Erro ao marcar pedidos como pagos' });
   }
 });
 

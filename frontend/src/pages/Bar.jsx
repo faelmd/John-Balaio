@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import '../styles/Bar.css';
 
-const STATUS_COLUNAS = ['Pendente', 'Em preparo', 'Pronto'];
-
 const Bar = () => {
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -54,15 +52,17 @@ const Bar = () => {
     }
   };
 
+  const STATUS_COLUNAS = ['Pendentes', 'Em Preparo', 'Prontos'];
+
   const renderPedidoCard = (pedido) => {
     const proximoStatus =
       pedido.status === 'pendente' ? 'em_preparo' :
         pedido.status === 'em_preparo' ? 'pronto' : null;
 
     const displayStatus = {
-      pendente: 'Pendente',
-      em_preparo: 'Em preparo',
-      pronto: 'Pronto',
+      pendente: 'Pendentes',
+      em_preparo: 'Em Preparo',
+      pronto: 'Prontos',
     }[pedido.status] || pedido.status;
 
     return (
@@ -95,8 +95,8 @@ const Bar = () => {
 
         <p>
           <strong>Status:</strong>{' '}
-          <span className={`status-tag ${pedido.status.replace('_', '-')}`}>
-            {displayStatus}
+          <span className={`status-tag ${pedido.status}`}>
+            {pedido.status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
           </span>
         </p>
 
@@ -107,7 +107,7 @@ const Bar = () => {
               className={`btn ${proximoStatus === 'em_preparo' ? 'amarelo' : 'verde'}`}
               onClick={() => atualizarStatus(pedido.id, proximoStatus)}
             >
-              {displayStatus === 'Pendente' ? 'Em preparo' : 'Pronto'}
+              {displayStatus === 'Pendentes' ? 'Em Preparo' : 'Prontos'}
             </button>
           </div>
         )}
@@ -133,13 +133,13 @@ const Bar = () => {
                 .filter(p => {
                   const st = p.status.toLowerCase();
                   return (
-                    (status === 'Pendente' && st === 'pendente') ||
-                    (status === 'Em preparo' && st === 'em_preparo') ||
-                    (status === 'Pronto' && st === 'pronto')
+                    (status === 'Pendentes' && st === 'pendente') ||
+                    (status === 'Em Preparo' && st === 'em_preparo') ||
+                    (status === 'Prontos' && st === 'pronto')
                   );
                 })
                 .map(renderPedidoCard)
-                .reverse() /* opcional: inverte a ordem se quiser os mais antigos embaixo */}
+                }
             </div>
           ))}
         </div>

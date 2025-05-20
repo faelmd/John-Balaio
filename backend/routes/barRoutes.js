@@ -12,7 +12,7 @@ router.get('/', async (req, res) => {
 
   try {
     const [pedidos] = await pool.query(
-      'SELECT id, mesa, status, criado_em FROM pedidos ORDER BY criado_em ASC'
+      'SELECT id, mesa, status, criado_em, observacao FROM pedidos ORDER BY criado_em ASC'
     );
 
     const pedidosComItens = await Promise.all(

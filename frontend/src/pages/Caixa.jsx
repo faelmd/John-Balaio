@@ -1,3 +1,4 @@
+// src/pages/CaixaDashboard.jsx
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -23,7 +24,6 @@ const CaixaDashboard = () => {
   const fetchMesas = async () => {
     setLoading(true);
     try {
-      // API retorna array de números (mesas ativas)
       const response = await axios.get('http://localhost:5000/api/pedidos/mesas');
       setMesas(response.data);
       setFeedback('');
@@ -37,32 +37,6 @@ const CaixaDashboard = () => {
 
   const handleMesaClick = (mesa) => {
     navigate(`/caixa/mesa/${mesa}`);
-  };
-
-  const marcarComoPago = async (mesa) => {
-    try {
-      // Busca pedidos e itens pendentes para a mesa
-      const { data: pedidos } = await axios.get(`http://localhost:5000/api/pedidos/mesa/${mesa}`);
-
-      // Extrai itens não pagos
-      const itemIds = pedidos
-        .flatMap(pedido => pedido.itens || [])
-        .filter(item => !item.pago)
-        .map(item => item.id);
-
-      if (itemIds.length === 0) {
-        setFeedback(`Nenhum item pendente para a mesa ${mesa}.`);
-        return;
-      }
-
-      await axios.put('http://localhost:5000/api/pedidos/pagar', { itemIds });
-
-      setFeedback(`Mesa ${mesa} paga com sucesso.`);
-      fetchMesas();
-    } catch (error) {
-      console.error('Erro ao marcar pedido como pago:', error);
-      setFeedback('Erro ao processar o pagamento.');
-    }
   };
 
   return (
@@ -84,12 +58,6 @@ const CaixaDashboard = () => {
                 className="mesa-button"
               >
                 Mesa {mesa}
-              </button>
-              <button
-                onClick={() => marcarComoPago(mesa)}
-                className="btn-pagar"
-              >
-                Marcar como pago
               </button>
             </div>
           ))}
