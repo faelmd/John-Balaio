@@ -4,6 +4,7 @@ import axios from 'axios';
 import ProductCard from '../components/ProductCard';
 import ProductForm from '../components/ProductForm';
 import '../styles/Administrador.css';
+import { Link } from 'react-router-dom';
 
 const Administrador = () => {
   const [products, setProducts] = useState([]);
@@ -99,6 +100,9 @@ const Administrador = () => {
           <button className="finalizar-expediente-btn" onClick={finalizarExpediente}>
             Finalizar Expediente 🔥
           </button>
+          <Link to="/relatorios">
+            <button className="relatorios-btn">📑 Relatórios</button>
+          </Link>
         </div>
       </div>
 

@@ -13,6 +13,7 @@ import LoginAdmin from './pages/LoginAdmin';
 import LoginCozinha from './pages/LoginCozinha';
 import LoginCaixa from './pages/LoginCaixa';
 import LoginBar from './pages/LoginBar';
+import Relatorios from './pages/Relatorios';
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
         <Route path="/bar" element={<Bar />} />
         <Route path="/caixa" element={<CaixaDashboard />} />
         <Route path="/caixa/mesa/:mesaId" element={<MesaCaixa />} />
+        <Route path="/relatorios" element={<Relatorios />} />
       </Routes>
     </Router>
   );
