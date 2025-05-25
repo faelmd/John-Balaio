@@ -15,14 +15,12 @@ const Cozinha = () => {
     if (!autorizado) navigate('/cozinha-login');
   }, [navigate]);
 
-  // Buscar pedidos periodicamente
   useEffect(() => {
-    fetchPedidos(); // buscar imediatamente ao carregar
+    fetchPedidos();
     const interval = setInterval(fetchPedidos, 5000);
     return () => clearInterval(interval);
   }, []);
 
-  // Atualizar título da aba
   useEffect(() => {
     document.title = 'John Balaio | Cozinha';
   }, []);
@@ -30,9 +28,26 @@ const Cozinha = () => {
   const fetchPedidos = async () => {
     try {
       const { data } = await axios.get(`http://localhost:5000/api/pedidos?origem=cozinha`);
-      const pedidosOrdenados = data.sort(
+
+      const pedidosComStatus = data.map(pedido => {
+        const statusItens = pedido.itens.map(item => item.status);
+
+        let status;
+        if (statusItens.every(s => s === 'pronto')) {
+          status = 'pronto';
+        } else if (statusItens.some(s => s === 'em_preparo')) {
+          status = 'em_preparo';
+        } else {
+          status = 'pendente';
+        }
+
+        return { ...pedido, status };
+      });
+
+      const pedidosOrdenados = pedidosComStatus.sort(
         (a, b) => new Date(a.criado_em) - new Date(b.criado_em)
       );
+
       setPedidos(pedidosOrdenados);
       setErro(null);
     } catch (err) {
@@ -43,7 +58,7 @@ const Cozinha = () => {
     }
   };
 
-  const atualizarStatus = async (id, novoStatusLabel) => {
+  const atualizarStatus = async (pedidoId, novoStatusLabel) => {
     let cozinheiro = '';
     let status;
 
@@ -56,32 +71,26 @@ const Cozinha = () => {
       if (!confirmar) return;
       status = 'pronto';
 
-      // Aqui você pode puxar o cozinheiro já salvo, se não estiver guardando:
-      const pedido = pedidos.find(p => p.id === id);
+      const pedido = pedidos.find(p => p.id === pedidoId);
       cozinheiro = pedido?.cozinheiro || pedido?.nome_cozinheiro || '';
     }
 
-    console.log('Payload sendo enviado:', { status, cozinheiro }); // 👈 VERIFIQUE aqui
-
     try {
-      const response = await axios.put(`http://localhost:5000/api/pedidos/${id}`, {
+      await axios.put(`http://localhost:5000/api/pedidos/${pedidoId}`, {
         status,
         cozinheiro
       });
 
-      if (response.status === 200) {
-        setPedidos(prevPedidos =>
-          prevPedidos.map(p =>
-            p.id === id ? { ...p, status, cozinheiro } : p
-          )
-        );
-      }
+      setPedidos(prevPedidos =>
+        prevPedidos.map(p =>
+          p.id === pedidoId ? { ...p, status, nome_cozinheiro: cozinheiro } : p
+        )
+      );
     } catch (error) {
       console.error('Erro ao atualizar pedido:', error);
       setErro('Erro ao atualizar status do pedido. Tente novamente.');
     }
   };
-
 
   const pedidosPorStatus = {
     Pendentes: pedidos.filter(p => p.status === 'pendente'),
@@ -96,8 +105,14 @@ const Cozinha = () => {
       <ul>
         {Array.isArray(pedido.itens) && pedido.itens.length > 0 ? (
           pedido.itens.map(item => (
-            <li key={item.item_id || item.id}>
-              🍽️ <strong>{item.nome_produto}</strong> ({item.quantidade})<br />
+            <li key={item.id}>
+              🍽️ <strong>{item.nome_produto}</strong> ({item.quantidade})
+              {item.observacao && (
+                <div className="obs">📝 {item.observacao}</div>
+              )}
+              <span className={`status-tag ${item.status}`}>
+                {item.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+              </span>
             </li>
           ))
         ) : (
@@ -109,13 +124,10 @@ const Cozinha = () => {
       )}
       <p>
         <strong>Hora:</strong>{' '}
-        {new Date(pedido.criado_em).toLocaleString('pt-BR', {
+        {new Date(pedido.criado_em).toLocaleTimeString('pt-BR', {
           hour: '2-digit',
           minute: '2-digit',
-          day: '2-digit',
-          month: '2-digit'
-        })
-        }
+        })}
       </p>
 
       <p>
@@ -130,12 +142,18 @@ const Cozinha = () => {
 
       <div className="botoes">
         {pedido.status === 'pendente' && (
-          <button className="btn amarelo" onClick={() => atualizarStatus(pedido.id, 'Em preparo')}>
+          <button
+            className="btn amarelo"
+            onClick={() => atualizarStatus(pedido.id, 'Em preparo')}
+          >
             Em preparo
           </button>
         )}
         {pedido.status === 'em_preparo' && (
-          <button className="btn verde" onClick={() => atualizarStatus(pedido.id, 'Pronto')}>
+          <button
+            className="btn verde"
+            onClick={() => atualizarStatus(pedido.id, 'Pronto')}
+          >
             Pronto
           </button>
         )}

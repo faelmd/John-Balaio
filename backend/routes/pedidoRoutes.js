@@ -3,12 +3,12 @@ const router = express.Router();
 const pool = require('../db');
 
 // ---------------------------
-// GET /mesas - Listar mesas com pedidos não prontos
+// GET /mesas - Listar mesas com pedidos que não estão prontos (status != 'pronto')
 // ---------------------------
 router.get('/mesas', async (req, res) => {
   try {
     const [rows] = await pool.query(
-      'SELECT DISTINCT mesa FROM pedidos WHERE status != "pronto"'
+      'SELECT DISTINCT p.mesa FROM itens_pedidos i JOIN pedidos p ON i.id_pedido = p.id WHERE i.status != "pronto"'
     );
     res.status(200).json(rows.map(r => r.mesa));
   } catch (err) {
@@ -17,7 +17,7 @@ router.get('/mesas', async (req, res) => {
   }
 });
 
-// GET /?origem=cozinha|bar - Listar pedidos por origem baseada nos itens
+// GET /?origem=cozinha|bar - Listar pedidos por origem (baseado em itens)
 router.get('/', async (req, res) => {
   const { origem } = req.query;
 
@@ -26,27 +26,28 @@ router.get('/', async (req, res) => {
   }
 
   try {
-    // Buscar todos os pedidos ainda não pagos
+    // Buscar pedidos que tenham pelo menos um item com a origem especificada e que não estejam pagos
     const [pedidos] = await pool.query(
-      'SELECT * FROM pedidos WHERE status != "pago" ORDER BY criado_em ASC'
+      `SELECT DISTINCT p.*
+       FROM pedidos p
+       JOIN itens_pedidos i ON p.id = i.id_pedido
+       WHERE i.origem = ? AND i.status != 'pago'
+       ORDER BY p.criado_em ASC`,
+      [origem]
     );
 
-    // Buscar apenas os pedidos que tenham itens com a origem informada
+    // Para cada pedido, buscar os itens da origem
     const pedidosComItens = await Promise.all(
       pedidos.map(async pedido => {
         const [itens] = await pool.query(
           'SELECT * FROM itens_pedidos WHERE id_pedido = ? AND origem = ?',
           [pedido.id, origem]
         );
-
-        if (itens.length > 0) {
-          return { ...pedido, itens };
-        }
-        return null; // ignora pedidos sem itens da origem informada
+        return { ...pedido, itens };
       })
     );
 
-    res.status(200).json(pedidosComItens.filter(Boolean));
+    res.status(200).json(pedidosComItens);
   } catch (err) {
     console.error('Erro ao buscar pedidos:', err);
     res.status(500).json({ error: 'Erro ao buscar pedidos' });
@@ -54,26 +55,26 @@ router.get('/', async (req, res) => {
 });
 
 // ---------------------------
-// PUT /:id - Atualizar status e cozinheiro de um pedido
+// PUT /:id - Atualizar status e cozinheiro de um item_pedido
 // ---------------------------
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
   const { status, cozinheiro } = req.body;
 
-  const validStatuses = ['pendente', 'em_preparo', 'pronto'];
+  const validStatuses = ['pendente', 'em_preparo', 'pronto', 'pago'];
   if (!status || !validStatuses.includes(status)) {
     return res.status(400).json({ error: 'Status inválido ou ausente' });
   }
 
   try {
     await pool.query(
-      'UPDATE pedidos SET status = ?, nome_cozinheiro = ? WHERE id = ?',
+      'UPDATE itens_pedidos SET status = ?, nome_cozinheiro = ? WHERE id = ?',
       [status, cozinheiro, id]
     );
-    res.status(200).json({ message: 'Pedido atualizado com sucesso!' });
+    res.status(200).json({ message: 'Item do pedido atualizado com sucesso!' });
   } catch (err) {
-    console.error('Erro ao atualizar pedido:', err);
-    res.status(500).json({ error: 'Erro ao atualizar pedido' });
+    console.error('Erro ao atualizar item do pedido:', err);
+    res.status(500).json({ error: 'Erro ao atualizar item do pedido' });
   }
 });
 
@@ -81,16 +82,16 @@ router.put('/:id', async (req, res) => {
 // POST /itens - Adicionar item ao pedido
 // ---------------------------
 router.post('/itens', async (req, res) => {
-  const { pedido_id, nome, quantidade, preco } = req.body;
+  const { id_pedido, nome, quantidade, preco, origem } = req.body;
 
-  if (!pedido_id || !nome || !quantidade || preco == null) {
+  if (!id_pedido || !nome || !quantidade || preco == null || !origem) {
     return res.status(400).json({ error: 'Dados obrigatórios faltando' });
   }
 
   try {
     await pool.query(
-      'INSERT INTO itens_pedidos (pedido_id, nome, quantidade, preco) VALUES (?, ?, ?, ?)',
-      [pedido_id, nome, quantidade, preco]
+      'INSERT INTO itens_pedidos (id_pedido, nome, quantidade, preco, origem, status) VALUES (?, ?, ?, ?, ?, "pendente")',
+      [id_pedido, nome, quantidade, preco, origem]
     );
     res.status(201).json({ message: 'Item adicionado com sucesso!' });
   } catch (err) {
@@ -103,16 +104,16 @@ router.post('/itens', async (req, res) => {
 // POST / - Criar novo pedido
 // ---------------------------
 router.post('/', async (req, res) => {
-  const { mesa, origem, status = 'pendente', cozinheiro = null, observacao = null } = req.body;
+  const { mesa, status = 'pendente', observacao = null } = req.body;
 
-  if (!mesa || !origem || !['cozinha', 'bar'].includes(origem)) {
-    return res.status(400).json({ error: 'Mesa e origem obrigatórios e válidos' });
+  if (!mesa) {
+    return res.status(400).json({ error: 'Mesa é obrigatória' });
   }
 
   try {
     const [result] = await pool.query(
-      'INSERT INTO pedidos (mesa, status, cozinheiro, observacao) VALUES (?, ?, ?, ?, ?)',
-      [mesa, status, cozinheiro, observacao]
+      'INSERT INTO pedidos (mesa, status, observacao) VALUES (?, ?, ?)',
+      [mesa, status, observacao]
     );
     res.status(201).json({ message: 'Pedido criado com sucesso!', pedidoId: result.insertId });
   } catch (err) {
@@ -122,24 +123,29 @@ router.post('/', async (req, res) => {
 });
 
 // ---------------------------
-// GET /pedidos-prontos - Pedidos prontos para o caixa
+// GET /pedidos-prontos - Pedidos prontos para o caixa (status 'pronto')
 // ---------------------------
 router.get('/pedidos-prontos', async (req, res) => {
   try {
     const [pedidos] = await pool.query(
-      'SELECT id, mesa, status, origem, criado_em, observacao FROM pedidos WHERE status = "pronto" ORDER BY criado_em ASC'
+      `SELECT DISTINCT p.id, p.mesa, p.status, p.criado_em, p.observacao
+       FROM pedidos p
+       JOIN itens_pedidos i ON p.id = i.id_pedido
+       WHERE i.status = 'pronto'
+       ORDER BY p.criado_em ASC`
     );
 
     const pedidosComItens = await Promise.all(
       pedidos.map(async pedido => {
         const [itens] = await pool.query(
-          'SELECT id, nome, quantidade, preco, pago FROM itens_pedidos WHERE pedido_id = ? ORDER BY id ASC',
+          'SELECT id, nome, quantidade, preco, pago, status FROM itens_pedidos WHERE id_pedido = ? ORDER BY id ASC',
           [pedido.id]
         );
         return { ...pedido, itens };
       })
     );
 
+    // Agrupar por mesa
     const agrupados = {};
     for (const pedido of pedidosComItens) {
       if (!agrupados[pedido.mesa]) agrupados[pedido.mesa] = [];
@@ -154,27 +160,29 @@ router.get('/pedidos-prontos', async (req, res) => {
 });
 
 // ---------------------------
-// GET /historico-pedidos - Histórico de pedidos pagos
+// GET /historico-pedidos - Histórico de pedidos pagos (status 'pago')
 // ---------------------------
 router.get('/historico-pedidos', async (req, res) => {
   try {
-    // 1. Buscar todos os pedidos com status 'pago'
+    // Buscar pedidos que tenham itens pagos
     const [pedidos] = await pool.query(
-      'SELECT * FROM pedidos WHERE status = "pago" ORDER BY criado_em DESC'
+      `SELECT DISTINCT p.*
+       FROM pedidos p
+       JOIN itens_pedidos i ON p.id = i.id_pedido
+       WHERE i.status = 'pago'
+       ORDER BY p.criado_em DESC`
     );
 
-    // 2. Para cada pedido, buscar os itens associados
     const pedidosComItens = await Promise.all(
-      pedidos.map(async (pedido) => {
+      pedidos.map(async pedido => {
         const [itens] = await pool.query(
-          'SELECT id, nome, quantidade, preco, pago FROM itens_pedidos WHERE pedido_id = ? ORDER BY id ASC',
+          'SELECT id, nome, quantidade, preco, pago, status FROM itens_pedidos WHERE id_pedido = ? ORDER BY id ASC',
           [pedido.id]
         );
         return { ...pedido, itens };
       })
     );
 
-    // 3. Enviar para o front já agrupado
     res.status(200).json(pedidosComItens);
   } catch (err) {
     console.error('Erro ao buscar histórico de pedidos:', err);

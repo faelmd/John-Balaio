@@ -1,4 +1,3 @@
-// src/pages/Administrador.jsx
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import ProductCard from '../components/ProductCard';
@@ -10,6 +9,8 @@ const Administrador = () => {
   const [products, setProducts] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [filtroOrigem, setFiltroOrigem] = useState('todos');
+  const [filtroDisponivel, setFiltroDisponivel] = useState('todos');
 
   const fetchProducts = async () => {
     try {
@@ -64,17 +65,13 @@ const Administrador = () => {
     const confirmar = window.confirm(
       'Tem certeza que deseja finalizar o expediente?\nIsso apagará TODOS os pedidos!'
     );
-
     if (!confirmar) return;
-
     try {
       const response = await axios.post('http://localhost:5000/api/admin/finalizar-expediente', {
-        token: 'supersecreto123' // ⚠️ Substitua por token seguro real
+        token: 'supersecreto123'
       });
-
       if (response.data.success) {
         alert(response.data.message);
-        // opcional: atualizar produtos ou outra ação
       }
     } catch (err) {
       console.error('Erro ao finalizar expediente:', err);
@@ -82,6 +79,7 @@ const Administrador = () => {
     }
   };
 
+  // 🔥 Agrupar produtos por origem e categoria
   const groupedProducts = products.reduce((acc, product) => {
     const key = `${product.origem} - ${product.categoria}`;
     if (!acc[key]) acc[key] = [];
@@ -89,20 +87,83 @@ const Administrador = () => {
     return acc;
   }, {});
 
+  // 🔥 Ordenação de grupos (Cozinha primeiro, depois Bar)
+  const ordemOrigens = ['Cozinha', 'Bar'];
+  const gruposOrdenados = Object.entries(groupedProducts)
+    .sort((a, b) => {
+      const origemA = a[0].split(' - ')[0];
+      const origemB = b[0].split(' - ')[0];
+      return ordemOrigens.indexOf(origemA) - ordemOrigens.indexOf(origemB);
+    });
+
+  // 🔥 Filtro de disponibilidade
+  const filtrarPorDisponibilidade = (item) => {
+    if (filtroDisponivel === 'todos') return true;
+    if (filtroDisponivel === 'ativo') return item.disponivel === 1;
+    if (filtroDisponivel === 'suspenso') return item.disponivel === 0;
+    return true;
+  };
+
   return (
     <div className="admin-container">
-      <div className="admin-header">
-        <h1>Produtos</h1>
-        <div className="admin-actions">
-          <button className="new-product-btn" onClick={handleNewProduct}>
-            Novo Produto
+      <h1 className="titulo">Painel do Administrador</h1>
+
+      <div className="admin-actions">
+        <button className="new-product-btn" onClick={handleNewProduct}>
+          Novo Produto
+        </button>
+        <button className="finalizar-expediente-btn" onClick={finalizarExpediente}>
+          Finalizar Expediente 🔥
+        </button>
+        <Link to="/relatorios">
+          <button className="relatorios-btn">📑 Relatórios</button>
+        </Link>
+      </div>
+
+      <h2 className="subtitulo-produtos">Produtos Cadastrados</h2>
+
+      {/* 🔥 Filtros */}
+      <div className="filtros-container">
+        <div className="filtros-produtos">
+          <span>Origem:</span>
+          <button
+            className={filtroOrigem === 'todos' ? 'ativo' : ''}
+            onClick={() => setFiltroOrigem('todos')}
+          >
+            Todos
           </button>
-          <button className="finalizar-expediente-btn" onClick={finalizarExpediente}>
-            Finalizar Expediente 🔥
+          <button
+            className={filtroOrigem === 'Cozinha' ? 'ativo' : ''}
+            onClick={() => setFiltroOrigem('Cozinha')}
+          >
+            Cozinha
           </button>
-          <Link to="/relatorios">
-            <button className="relatorios-btn">📑 Relatórios</button>
-          </Link>
+          <button
+            className={filtroOrigem === 'Bar' ? 'ativo' : ''}
+            onClick={() => setFiltroOrigem('Bar')}
+          >
+            Bar
+          </button>
+
+          <span>Status:</span>
+          <button
+            className={filtroDisponivel === 'todos' ? 'ativo' : ''}
+            onClick={() => setFiltroDisponivel('todos')}
+          >
+            Todos
+          </button>
+          <button
+            className={filtroDisponivel === 'ativo' ? 'ativo' : ''}
+            onClick={() => setFiltroDisponivel('ativo')}
+          >
+            Ativo
+          </button>
+          <button
+            className={filtroDisponivel === 'suspenso' ? 'ativo' : ''}
+            onClick={() => setFiltroDisponivel('suspenso')}
+          >
+            Suspenso
+          </button>
         </div>
       </div>
 
@@ -123,22 +184,38 @@ const Administrador = () => {
       )}
 
       <div className="product-group-list">
-        {Object.entries(groupedProducts).map(([group, items]) => (
-          <div key={group} className="product-group">
-            <h3>{group}</h3>
-            <div className="product-list">
-              {items.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  onToggleAvailability={handleToggleAvailability}
-                />
-              ))}
-            </div>
-          </div>
-        ))}
+        {gruposOrdenados
+          .filter(([group]) => {
+            if (filtroOrigem === 'todos') return true;
+            return group.startsWith(filtroOrigem);
+          })
+          .map(([group, items]) => {
+            const itensFiltrados = items
+              .filter(filtrarPorDisponibilidade)
+              .sort((a, b) => a.nome.localeCompare(b.nome)); // 🅰️✔️ Ordem alfabética
+
+            if (itensFiltrados.length === 0) return null; // 🔥 Oculta grupo vazio
+
+            return (
+              <div
+                key={group}
+                className={`product-group ${group.startsWith('Cozinha') ? 'cozinha' : 'bar'}`}
+              >
+                <h3>{group}</h3>
+                <div className="product-list">
+                  {itensFiltrados.map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                      onToggleAvailability={handleToggleAvailability}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
       </div>
     </div>
   );

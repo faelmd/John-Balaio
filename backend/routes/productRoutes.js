@@ -13,10 +13,10 @@ const upload = require('../middleware/upload');
 router.get('/', getAllProducts);
 
 // Criar produto com upload de imagem
-router.post('/', upload.single('image'), createProduct);
+router.post('/', upload.single('imagem'), createProduct);
 
 // Atualizar produto com imagem
-router.put('/:id', upload.single('image'), updateProduct);
+router.put('/:id', upload.single('imagem'), updateProduct);
 
 // Atualizar status (disponível/suspenso)
 router.patch('/:id/status', updateProductStatus); // <-- nova rota aqui

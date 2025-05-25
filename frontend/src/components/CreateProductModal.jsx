@@ -31,15 +31,23 @@ export default function CreateProductModal({
   const [image, setImage] = useState(null);
 
   const categorias = [
-    "Carnes",
-    "Acompanhamento",
-    "Prato individual",
+    "Na Brasa",
+    "Vegetariano Completo",
+    "Acompanhamentos",
+    "Pratos Individuais",
+    "Pratos Kids",
     "Molhos",
-    "Hamburguer",
+    "Hambúrguer's",
     "Extras",
-    "Porções",
+    "Para Compartilhar",
     "Sobremesas",
     "Bebidas",
+    "Sucos",
+    "Sodas Italianas",
+    "Cervejas",
+    "Para Brindar",
+    "Adicionais",
+    "Doses e Shots",
   ];
 
   useEffect(() => {
@@ -88,7 +96,7 @@ export default function CreateProductModal({
     formData.append("origem", product.origem);
 
     if (image) {
-      formData.append("image", image);
+      formData.append("imagem", image);
     }
 
     try {

@@ -6,6 +6,14 @@
   min-height: 100vh;
 }
 
+.titulo {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #ea580c;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
 .admin-header {
   display: flex;
   justify-content: space-between;
@@ -30,6 +38,15 @@
 
 .new-product-btn:hover {
   background-color: #ea580c;
+}
+
+.relatorios-btn {
+  background-color: black;
+  color: white;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
 }
 
 .modal-overlay {
@@ -103,4 +120,89 @@
 
 .finalizar-expediente-btn:hover {
   background-color: #c0392b;
+}
+
+/* 🔥 Filtro botões */
+
+.filtros-produtos button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ccc;
+  background: white;
+  cursor: pointer;
+  border-radius: 6px;
+  font-weight: bold;
+  transition: 0.2s;
+}
+
+.filtros-produtos button:hover {
+  background: #f3f3f3;
+}
+
+.filtros-produtos button.ativo {
+  background-color: #ea580c;
+  color: white;
+}
+
+/* 🔥 Separação visual Cozinha x Bar */
+.product-group.cozinha {
+  border: 2px solid #22c55e;
+  background-color: #f0fdf4;
+  padding: 1rem;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+}
+
+.product-group.bar {
+  border: 2px solid #3b82f6;
+  background-color: #eff6ff;
+  padding: 1rem;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+}
+
+.subtitulo-produtos {
+  margin-top: 2rem;
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: black;
+  border-bottom: 2px solid #ea580c;
+  padding-bottom: 0.5rem;
+}
+
+/* 🔥 Novos filtros */
+.filtros-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  margin: 1rem 0;
+}
+
+.filtros-produtos{
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.filtros-produtos span{
+  font-weight: bold;
+}
+
+.filtros-produtos button{
+  padding: 0.4rem 0.9rem;
+  border-radius: 8px;
+  font-weight: bold;
+  color: #333;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  background-color: white;
+  transition: 0.2s ease;
+}
+
+.filtros-produtos button:hover{
+  background-color: #f3f4f6;
+}
+
+.filtros-produtos button.ativo{
+  background-color: #ea580c;
+  color: white;
 }

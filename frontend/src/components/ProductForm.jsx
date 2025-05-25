@@ -115,21 +115,23 @@ const ProductForm = ({ onProductSaved, productToEdit, onClose }) => {
           required
         >
           <option value="">Selecione a categoria</option>
-          <option value="Carnes">Carnes</option>
-          <option value="Acompanhamento">Acompanhamento</option>
-          <option value="Prato individual">Prato individual</option>
+          <option value="Na Brasa">Na Brasa</option>
+          <option value="Vegetariano Completo">Vegetariano Completo</option>
+          <option value="Acompanhamentos">Acompanhamentos</option>
+          <option value="Pratos Individuais">Pratos Individuais</option>
+          <option value="Pratos Kids">Pratos Kids</option>
           <option value="Molhos">Molhos</option>
-          <option value="Hamburguer">Hamburguer</option>
-          <option value="Pizza">Pizza</option>
+          <option value="Hamburguer's">Hamburguer's</option>
           <option value="Extras">Extras</option>
-          <option value="Porções">Porções</option>
+          <option value="Para Compartilhar">Para Compartilhar</option>
           <option value="Sobremesas">Sobremesas</option>
-          <option value="Refrigerante">Refrigerante</option>
+          <option value="Bebidas">Bebidas</option>
           <option value="Sucos">Sucos</option>
-          <option value="Drinks">Drinks</option>
-          <option value="Doses">Doses</option>
+          <option value="Sodas Italianas">Sodas Italianas</option>
           <option value="Cervejas">Cervejas</option>
-          <option value="Outros">Outros</option>
+          <option value="Para Brindar">Para Brindar</option>
+          <option value="Adicionais">Adicionais</option>
+          <option value="Doses e Shots">Doses e Shots</option>
         </select>
       </div>
 

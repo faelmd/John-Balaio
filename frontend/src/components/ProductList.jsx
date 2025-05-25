@@ -8,7 +8,7 @@ const EditProductModal = ({ product, onClose }) => {
     price: product.price,
     categoria: product.categoria,
     origem: product.origem,
-    image: product.image,
+    imagem: product.image,
   });
 
   const handleChange = (e) => {

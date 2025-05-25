@@ -34,14 +34,11 @@ router.post('/finalizar-expediente', async (req, res) => {
         [pedido.id]
       );
 
-      conteudo += `Pedido ID: ${pedido.id}\n`;
       conteudo += `Mesa: ${pedido.mesa}\n`;
       conteudo += `Criado em: ${pedido.criado_em}\n`;
       conteudo += `Atualizado em: ${pedido.atualizado_em}\n`;
-      conteudo += `Origem: ${pedido.origem}\n`;
       conteudo += `Cozinheiro: ${pedido.nome_cozinheiro || 'N/A'}\n`;
       conteudo += `Observação: ${pedido.observacao || 'N/A'}\n`;
-      conteudo += `Status: ${pedido.status}\n`;
       conteudo += `Itens:\n`;
 
       let totalPedido = 0;

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 
-// GET /api/bar?origem=bar - Listar pedidos de bar com itens
+// GET /api/bar?origem=bar - Listar pedidos de bar com itens pendentes ou em preparo
 router.get('/', async (req, res) => {
   const { origem } = req.query;
 
@@ -11,18 +11,22 @@ router.get('/', async (req, res) => {
   }
 
   try {
+    // Pega todos os pedidos ordenados
     const [pedidos] = await pool.query(
-      'SELECT id, mesa, status, criado_em, observacao FROM pedidos ORDER BY criado_em ASC'
+      'SELECT id, mesa, criado_em, observacao FROM pedidos ORDER BY criado_em ASC'
     );
 
+    // Para cada pedido, buscar só os itens do bar que estejam pendentes ou em preparo
     const pedidosComItens = await Promise.all(
       pedidos.map(async pedido => {
         const [itens] = await pool.query(
-          'SELECT id, nome_produto, quantidade, preco_unitario, pago, origem FROM itens_pedidos WHERE id_pedido = ? AND origem = "bar"',
+          `SELECT id, nome_produto, quantidade, preco_unitario, pago, status, origem 
+           FROM itens_pedidos 
+           WHERE id_pedido = ? AND origem = 'bar' AND status IN ('pendente', 'em_preparo')`,
           [pedido.id]
         );
 
-        // Apenas incluir pedidos que têm itens de origem 'bar'
+        // Retorna o pedido só se tiver itens ativos do bar
         if (itens.length > 0) {
           return { ...pedido, itens };
         }

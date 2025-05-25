@@ -1,4 +1,3 @@
-// src/pages/CaixaDashboard.jsx
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -24,8 +23,12 @@ const CaixaDashboard = () => {
   const fetchMesas = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:5000/api/pedidos/mesas');
-      setMesas(response.data);
+      const response = await axios.get('http://localhost:5000/api/caixa/mesas');
+
+      // ✅ Agora considera mesas que possuem QUALQUER pedido (independente do status)
+      const mesasAtivas = response.data.map(mesa => mesa.mesa);
+
+      setMesas(mesasAtivas);
       setFeedback('');
     } catch (err) {
       console.error('Erro ao buscar mesas:', err);
@@ -41,14 +44,14 @@ const CaixaDashboard = () => {
 
   return (
     <div className="caixa-container">
-      <h1 className="caixa-title">Caixa - John Balaio</h1>
+      <h1 className="caixa-title">Painel do Caixa</h1>
 
       {feedback && <div className="feedback">{feedback}</div>}
 
       {loading ? (
         <p className="mensagem">Carregando mesas...</p>
       ) : mesas.length === 0 ? (
-        <p className="mensagem">Nenhuma mesa ativa no momento.</p>
+        <p className="mensagem">Nenhuma mesa aberta no momento.</p>
       ) : (
         <div className="mesas-list">
           {mesas.map(mesa => (
