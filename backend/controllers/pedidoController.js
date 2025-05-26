@@ -14,15 +14,17 @@ exports.criarPedido = async (req, res) => {
 
         const [pedidoResult] = await connection.query(
             'INSERT INTO pedidos (mesa, status, origem, observacao) VALUES (?, ?, ?, ?)',
-            [mesa, 'pendente', 'cozinha', observacao || null] // pode ser dinâmico
+            [mesa, 'pendente', 'cozinha', observacao || null] // ou use o valor dinâmico do req.body.origem
         );
         const pedidoId = pedidoResult.insertId;
 
+        // Atualizado
         const itemQueries = itens.map(async item => {
             if (!item.nome_produto) {
                 throw new Error('Cada item deve ter nome_produto definido.');
             }
 
+            // Buscar origem a partir da tabela de produtos
             const [[produtoResult]] = await connection.query(
                 'SELECT origem FROM produtos WHERE nome = ?',
                 [item.nome_produto]
@@ -34,16 +36,15 @@ exports.criarPedido = async (req, res) => {
 
             return connection.query(
                 `INSERT INTO itens_pedidos 
-        (id_pedido, nome_produto, quantidade, preco_unitario, pago, origem, status) 
-        VALUES (?, ?, ?, ?, ?, ?, ?)`,
+     (id_pedido, nome_produto, quantidade, preco_unitario, pago, origem) 
+     VALUES (?, ?, ?, ?, ?, ?)`,
                 [
                     pedidoId,
                     item.nome_produto,
                     item.quantidade || 1,
                     item.preco_unitario || 0.0,
                     0,
-                    produtoResult.origem,
-                    'pendente' // status inicial do item
+                    produtoResult.origem
                 ]
             );
         });
@@ -106,62 +107,35 @@ exports.marcarComoEmPreparo = async (req, res) => {
             ['em_preparo', nome_cozinheiro, id]
         );
 
-        // Atualiza também o status dos itens para "em_preparo"
-        await db.promise().query(
-            'UPDATE itens_pedidos SET status = ? WHERE id_pedido = ?',
-            ['em_preparo', id]
-        );
-
-        res.json({ message: 'Pedido e itens marcados como "em_preparo".' });
+        res.json({ message: 'Pedido marcado como "em_preparo".' });
     } catch (error) {
         console.error('Erro ao atualizar pedido:', error.message);
         res.status(500).json({ message: 'Erro ao atualizar pedido.' });
     }
 };
 
-// Marcar pedido como "pronto" — só se TODOS os itens estiverem "em_preparo"
+// Marcar pedido como "pronto"
 exports.marcarComoPronto = async (req, res) => {
     const { id } = req.params;
 
     try {
-        // Checar se o pedido existe
-        const [pedidoResults] = await db.promise().query('SELECT * FROM pedidos WHERE id = ?', [id]);
-        if (pedidoResults.length === 0) {
+        const [results] = await db.promise().query('SELECT * FROM pedidos WHERE id = ?', [id]);
+        const pedido = results[0];
+
+        if (!pedido) {
             return res.status(404).json({ message: 'Pedido não encontrado.' });
         }
 
-        // Buscar status dos itens do pedido
-        const [itens] = await db.promise().query(
-            'SELECT status FROM itens_pedidos WHERE id_pedido = ?',
-            [id]
-        );
-
-        if (itens.length === 0) {
-            return res.status(400).json({ message: 'Pedido não possui itens.' });
+        if (pedido.status !== 'em_preparo') {
+            return res.status(400).json({ message: 'O pedido precisa estar "em_preparo" para ser marcado como "pronto".' });
         }
 
-        // Verificar se TODOS os itens estão "em_preparo"
-        const allEmPreparo = itens.every(item => item.status === 'em_preparo');
-
-        if (!allEmPreparo) {
-            return res.status(400).json({
-                message: 'Todos os itens precisam estar "em_preparo" para marcar o pedido como "pronto".'
-            });
-        }
-
-        // Atualizar status do pedido para "pronto"
         await db.promise().query(
             'UPDATE pedidos SET status = ? WHERE id = ?',
             ['pronto', id]
         );
 
-        // Atualizar status dos itens para "pronto"
-        await db.promise().query(
-            'UPDATE itens_pedidos SET status = ? WHERE id_pedido = ?',
-            ['pronto', id]
-        );
-
-        res.json({ message: 'Pedido e itens marcados como "pronto".' });
+        res.json({ message: 'Pedido marcado como "pronto".' });
     } catch (error) {
         console.error('Erro ao atualizar pedido:', error.message);
         res.status(500).json({ message: 'Erro ao atualizar pedido.' });

@@ -54,16 +54,16 @@ const Bar = () => {
 
   const STATUS_COLUNAS = ['Pendentes', 'Em Preparo', 'Prontos'];
 
-  const renderPedidoCard = (pedido,itens_pedidos) => {
+  const renderPedidoCard = (pedido) => {
     const proximoStatus =
-      itens_pedidos.status === 'pendente' ? 'em_preparo' :
-        itens_pedidos.status === 'em_preparo' ? 'pronto' : null;
+      pedido.status === 'pendente' ? 'em_preparo' :
+        pedido.status === 'em_preparo' ? 'pronto' : null;
 
     const displayStatus = {
       pendente: 'Pendentes',
       em_preparo: 'Em Preparo',
       pronto: 'Prontos',
-    }[itens_pedidos.status] || itens_pedidos.status;
+    }[pedido.status] || pedido.status;
 
     return (
       <div key={pedido.id} className="pedido-card">
@@ -95,8 +95,8 @@ const Bar = () => {
 
         <p>
           <strong>Status:</strong>{' '}
-          <span className={`status-tag ${itens_pedidos.status}`}>
-            {itens_pedidos.status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+          <span className={`status-tag ${pedido.status}`}>
+            {pedido.status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
           </span>
         </p>
 
@@ -130,8 +130,8 @@ const Bar = () => {
             <div className="coluna" key={status}>
               <h2 className="subtitulo">{status}</h2>
               {pedidos
-                .filter(i => {
-                  const st = i.status.toLowerCase();
+                .filter(p => {
+                  const st = p.status.toLowerCase();
                   return (
                     (status === 'Pendentes' && st === 'pendente') ||
                     (status === 'Em Preparo' && st === 'em_preparo') ||
