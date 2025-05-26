@@ -1,16 +1,18 @@
-// src/routes/caixa.js
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const fs = require('fs').promises;
+const path = require('path');
 
-// GET /caixa/mesas-pagas
+// ✅ GET /caixa/mesas-pagas
 router.get('/mesas-pagas', async (req, res) => {
   try {
     const [rows] = await pool.query(`
-      SELECT DISTINCT mesa 
-      FROM pedidos 
-      WHERE status = 'pago'
-      ORDER BY mesa ASC
+      SELECT DISTINCT p.mesa
+      FROM pedidos p
+      JOIN itens_pedidos i ON p.id = i.id_pedido
+      GROUP BY p.mesa
+      HAVING SUM(i.pago = 0) = 0
     `);
     res.status(200).json(rows.map(r => r.mesa));
   } catch (err) {
@@ -19,10 +21,7 @@ router.get('/mesas-pagas', async (req, res) => {
   }
 });
 
-
-// ---------------------------
-// GET /caixa/mesa/:mesaId - Lista todos os itens não pagos da mesa
-// ---------------------------
+// ✅ GET /caixa/mesa/:mesaId → Listar todos os itens da mesa
 router.get('/mesa/:mesaId', async (req, res) => {
   const { mesaId } = req.params;
 
@@ -33,23 +32,22 @@ router.get('/mesa/:mesaId', async (req, res) => {
         i.nome_produto,
         i.quantidade,
         i.preco_unitario,
+        i.status,
         i.pago
       FROM pedidos p
       JOIN itens_pedidos i ON p.id = i.id_pedido
-      WHERE p.mesa = ? AND p.status = 'pronto'
+      WHERE p.mesa = ?
       ORDER BY i.id ASC
     `, [mesaId]);
 
     res.status(200).json(itens);
   } catch (err) {
-    console.error('Erro ao buscar itens da mesa:', err);
+    console.error('❌ Erro ao buscar itens da mesa:', err);
     res.status(500).json({ error: 'Erro ao buscar itens da mesa' });
   }
 });
 
-// ---------------------------
-// PUT /caixa/pagar - Pagar itens selecionados
-// ---------------------------
+// ✅ PUT /caixa/pagar → Pagar itens selecionados
 router.put('/pagar', async (req, res) => {
   const { itemIds } = req.body;
 
@@ -71,75 +69,67 @@ router.put('/pagar', async (req, res) => {
   }
 });
 
-// ---------------------------
-// POST /caixa/pagar/:mesaId - Pagar tudo da mesa
-// ---------------------------
+// ✅ POST /caixa/pagar/:mesaId → Pagar tudo da mesa (só itens prontos)
 router.post('/pagar/:mesaId', async (req, res) => {
   const { mesaId } = req.params;
 
   try {
-    // 🔍 Buscar itens não pagos da mesa e status 'pronto'
     const [itens] = await pool.query(
-      `
-      SELECT i.id, i.nome AS nome, i.quantidade, i.preco, p.id AS pedido_id
-      FROM itens_pedidos i
-      INNER JOIN pedidos p ON i.id_pedido = p.id
-      WHERE p.mesa = ? AND i.pago = 0 AND p.status = 'pronto'
-    `,
+      `SELECT i.id, i.nome_produto, i.quantidade, i.preco_unitario 
+       FROM itens_pedidos i
+       INNER JOIN pedidos p ON i.id_pedido = p.id
+       WHERE p.mesa = ? AND i.status = 'pronto' AND i.pago = 0`,
       [mesaId]
     );
 
     if (itens.length === 0) {
-      return res.status(400).json({ error: 'Nenhum item pendente para essa mesa.' });
+      return res.status(400).json({ error: 'Nenhum item PRONTO e NÃO PAGO para esta mesa.' });
     }
 
-    // 💰 Calcular total
     const total = itens.reduce(
-      (acc, item) => acc + item.quantidade * item.preco,
+      (acc, item) => acc + item.preco_unitario * item.quantidade,
       0
     );
 
-    // 📝 Gerar comprovante TXT
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const nomeArquivo = `comprovante-mesa-${mesaId}-${timestamp}.txt`;
-    const dir = path.join(__dirname, '../comprovantes');
-    await fs.mkdir(dir, { recursive: true });
+    // 🧾 Gerar comprovante
+    const dataHora = new Date().toISOString().replace(/[:.]/g, '-');
+    const nomeArquivo = `comprovante-mesa-${mesaId}-${dataHora}.txt`;
+    const caminho = path.join(__dirname, '../comprovantes', nomeArquivo);
 
-    let conteudo = `===== COMPROVANTE DE PAGAMENTO =====\n`;
+    let conteudo = `=== COMPROVANTE DE PAGAMENTO ===\n`;
     conteudo += `Mesa: ${mesaId}\n`;
-    conteudo += `Data: ${new Date().toLocaleString('pt-BR')}\n\n`;
+    conteudo += `Data/Hora: ${new Date().toLocaleString('pt-BR')}\n\n`;
 
     itens.forEach((item) => {
-      const subtotal = (item.preco * item.quantidade).toFixed(2);
-      conteudo += `Pedido #${item.pedido_id} - ${item.quantidade}x ${item.nome} - R$${item.preco} cada - Subtotal: R$${subtotal}\n`;
+      conteudo += `${item.nome_produto} - ${item.quantidade}x R$${item.preco_unitario.toFixed(2)}\n`;
     });
 
     conteudo += `\nTOTAL: R$${total.toFixed(2)}\n`;
-    conteudo += `======================================\n`;
+    conteudo += `===============================\n`;
 
-    const caminho = path.join(dir, nomeArquivo);
+    await fs.mkdir(path.join(__dirname, '../comprovantes'), { recursive: true });
     await fs.writeFile(caminho, conteudo);
 
-    // ✅ Atualizar itens como pagos
-    const idsItens = itens.map((i) => i.id);
+    // 💰 Atualizar itens como pagos
+    const itemIds = itens.map(item => item.id);
     await pool.query(
-      `UPDATE itens_pedidos SET pago = 1 WHERE id IN (${idsItens.join(',')})`
+      `UPDATE itens_pedidos SET pago = 1 WHERE id IN (?)`,
+      [itemIds]
     );
 
-    res.status(200).json({
-      success: true,
-      message: `Itens da mesa ${mesaId} pagos.`,
-      comprovante: nomeArquivo,
-    });
+    res.status(200).json({ success: true, message: 'Pagamento efetuado', arquivo: nomeArquivo });
+
   } catch (err) {
-    console.error('Erro ao pagar tudo:', err);
-    res.status(500).json({ error: 'Erro ao pagar a mesa por completo.' });
+    console.error('Erro no pagamento:', err);
+    res.status(500).json({ error: 'Erro ao processar pagamento.' });
   }
 });
 
+// ✅ GET /caixa/comprovantes/:filename → Download do comprovante
 router.get('/comprovantes/:filename', (req, res) => {
   const { filename } = req.params;
   const filePath = path.join(__dirname, '../comprovantes', filename);
+
   res.download(filePath, (err) => {
     if (err) {
       console.error('Erro ao baixar comprovante:', err);
@@ -148,9 +138,7 @@ router.get('/comprovantes/:filename', (req, res) => {
   });
 });
 
-// ---------------------------
-// POST /caixa/pagar-dividido/:mesaId - Calcular divisão da conta
-// ---------------------------
+// ✅ POST /caixa/pagar-dividido/:mesaId → Dividir a conta
 router.post('/pagar-dividido/:mesaId', async (req, res) => {
   const { mesaId } = req.params;
   const { partes } = req.body;
@@ -164,11 +152,11 @@ router.post('/pagar-dividido/:mesaId', async (req, res) => {
       SELECT preco_unitario, quantidade 
       FROM itens_pedidos i
       INNER JOIN pedidos p ON i.id_pedido = p.id
-      WHERE p.mesa = ? AND i.pago = 0
+      WHERE p.mesa = ? AND i.pago = 0 AND i.status = 'pronto'
     `, [mesaId]);
 
     if (itens.length === 0) {
-      return res.status(400).json({ error: 'Nenhum item pendente nesta mesa.' });
+      return res.status(400).json({ error: 'Nenhum item PRONTO e NÃO PAGO nesta mesa.' });
     }
 
     const total = itens.reduce((acc, item) =>

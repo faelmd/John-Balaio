@@ -9,20 +9,19 @@ const Cozinha = () => {
   const [erro, setErro] = useState(null);
   const navigate = useNavigate();
 
-  // Verificação de autenticação
+  // ✅ Verificação de autenticação
   useEffect(() => {
     const autorizado = localStorage.getItem('authCozinha') === 'true';
     if (!autorizado) navigate('/cozinha-login');
   }, [navigate]);
 
-  // Buscar pedidos periodicamente
+  // ✅ Buscar pedidos periodicamente
   useEffect(() => {
-    fetchPedidos(); // buscar imediatamente ao carregar
+    fetchPedidos();
     const interval = setInterval(fetchPedidos, 5000);
     return () => clearInterval(interval);
   }, []);
 
-  // Atualizar título da aba
   useEffect(() => {
     document.title = 'John Balaio | Cozinha';
   }, []);
@@ -43,50 +42,54 @@ const Cozinha = () => {
     }
   };
 
-  const atualizarStatus = async (id, novoStatusLabel) => {
-    let cozinheiro = '';
+  // 🔥 Atualizar status de um ITEM
+  const atualizarStatus = async (itemId, novoStatusLabel) => {
     let status;
+    let cozinheiro = '';
 
     if (novoStatusLabel === 'Em preparo') {
       cozinheiro = prompt('Digite o nome do cozinheiro:');
       if (!cozinheiro) return;
       status = 'em_preparo';
     } else if (novoStatusLabel === 'Pronto') {
-      const confirmar = window.confirm('Tem certeza que deseja marcar como Pronto?');
+      const confirmar = window.confirm('Confirma que o item está PRONTO?');
       if (!confirmar) return;
       status = 'pronto';
-
-      // Aqui você pode puxar o cozinheiro já salvo, se não estiver guardando:
-      const pedido = pedidos.find(p => p.id === id);
-      cozinheiro = pedido?.cozinheiro || pedido?.nome_cozinheiro || '';
     }
 
-    console.log('Payload sendo enviado:', { status, cozinheiro }); // 👈 VERIFIQUE aqui
-
     try {
-      const response = await axios.put(`http://localhost:5000/api/pedidos/${id}`, {
+      await axios.put(`http://localhost:5000/api/itens/${itemId}/status`, {
         status,
-        cozinheiro
+        cozinheiro,
       });
 
-      if (response.status === 200) {
-        setPedidos(prevPedidos =>
-          prevPedidos.map(p =>
-            p.id === id ? { ...p, status, cozinheiro } : p
+      // Atualiza localmente o status do item
+      setPedidos(prevPedidos =>
+        prevPedidos.map(pedido => ({
+          ...pedido,
+          itens: pedido.itens.map(item =>
+            item.id === itemId
+              ? { ...item, status, cozinheiro: cozinheiro || item.cozinheiro }
+              : item
           )
-        );
-      }
+        }))
+      );
     } catch (error) {
-      console.error('Erro ao atualizar pedido:', error);
-      setErro('Erro ao atualizar status do pedido. Tente novamente.');
+      console.error('Erro ao atualizar status do item:', error);
+      setErro('Erro ao atualizar status do item. Tente novamente.');
     }
   };
 
-
   const pedidosPorStatus = {
-    Pendentes: pedidos.filter(p => p.status === 'pendente'),
-    'Em Preparo': pedidos.filter(p => p.status === 'em_preparo'),
-    Prontos: pedidos.filter(p => p.status === 'pronto'),
+    Pendentes: pedidos.filter(p =>
+      p.itens?.some(item => item.status === 'pendente')
+    ),
+    'Em Preparo': pedidos.filter(p =>
+      p.itens?.some(item => item.status === 'em_preparo')
+    ),
+    Prontos: pedidos.filter(p =>
+      p.itens?.every(item => item.status === 'pronto')
+    ),
   };
 
   const renderPedidoCard = (pedido) => (
@@ -96,14 +99,36 @@ const Cozinha = () => {
       <ul>
         {Array.isArray(pedido.itens) && pedido.itens.length > 0 ? (
           pedido.itens.map(item => (
-            <li key={item.item_id || item.id}>
-              🍽️ <strong>{item.nome_produto}</strong> ({item.quantidade})<br />
+            <li key={item.id}>
+              🍽️ <strong>{item.nome_produto}</strong> ({item.quantidade}){' '}
+              <span className={`status-tag ${item.status}`}>
+                {item.status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+              </span>
+              <div className="botoes">
+                {item.status === 'pendente' && (
+                  <button
+                    className="btn amarelo"
+                    onClick={() => atualizarStatus(item.id, 'Em preparo')}
+                  >
+                    Em preparo
+                  </button>
+                )}
+                {item.status === 'em_preparo' && (
+                  <button
+                    className="btn verde"
+                    onClick={() => atualizarStatus(item.id, 'Pronto')}
+                  >
+                    Pronto
+                  </button>
+                )}
+              </div>
             </li>
           ))
         ) : (
           <li>Nenhum item</li>
         )}
       </ul>
+
       {pedido.observacao && (
         <p><span className="observacao">📝 <em>{pedido.observacao}</em></span></p>
       )}
@@ -114,32 +139,8 @@ const Cozinha = () => {
           minute: '2-digit',
           day: '2-digit',
           month: '2-digit'
-        })
-        }
+        })}
       </p>
-
-      <p>
-        <strong>Status:</strong>{' '}
-        <span className={`status-tag ${pedido.status}`}>
-          {pedido.status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
-        </span>
-      </p>
-      {pedido.nome_cozinheiro && (
-        <p><strong>Cozinheiro:</strong> {pedido.nome_cozinheiro}</p>
-      )}
-
-      <div className="botoes">
-        {pedido.status === 'pendente' && (
-          <button className="btn amarelo" onClick={() => atualizarStatus(pedido.id, 'Em preparo')}>
-            Em preparo
-          </button>
-        )}
-        {pedido.status === 'em_preparo' && (
-          <button className="btn verde" onClick={() => atualizarStatus(pedido.id, 'Pronto')}>
-            Pronto
-          </button>
-        )}
-      </div>
     </div>
   );
 

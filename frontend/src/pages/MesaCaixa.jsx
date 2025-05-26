@@ -96,30 +96,40 @@ const MesaCaixa = () => {
           <ul className="itens-lista">
             {itens.map((item) => {
               const subtotal = (item.preco_unitario * item.quantidade).toFixed(2);
+              const podeSelecionar = item.status === 'pronto' && !item.pago;
+              const isSelecionado = selecionados.includes(item.id);
+
               return (
                 <li
                   key={item.id}
-                  className={`item ${item.pago ? 'pago' : ''} status-${item.status} ${selecionados.includes(item.id) ? 'selecionado' : ''
-                    }`}
+                  className={`item 
+          ${item.pago ? 'pago' : ''} 
+          ${isSelecionado ? 'selecionado' : ''} 
+          status-${item.status || 'desconhecido'}`}
                 >
                   <label>
                     <input
                       type="checkbox"
-                      disabled={!(item.status === 'pronto') || item.pago}
-                      checked={selecionados.includes(item.id)}
+                      disabled={!podeSelecionar}
+                      checked={isSelecionado}
                       onChange={() => toggleSelecionado(item.id)}
                     />
-                    <strong>{item.nome_produto}</strong> - {item.quantidade}x R$ {item.preco_unitario} {' '}
-                    <span className="subtotal">→ Subtotal: R$ {subtotal}</span>
-                    <span className={`status-tag ${item.status}`}>
-                      {item.pago ? 'Pago' : item.status.replace('_', ' ')}
+                    <strong>{item.nome_produto}</strong> - {item.quantidade}x R$ {item.preco_unitario}
+                    <span className="subtotal">
+                      → Subtotal: R$ {subtotal}
+                    </span>
+                    <span className={`status-tag ${item.status || 'desconhecido'}`}>
+                      {item.pago
+                        ? 'Pago'
+                        : item.status
+                          ? item.status.replace('_', ' ')
+                          : 'Sem status'}
                     </span>
                   </label>
                 </li>
               );
             })}
           </ul>
-
           <div className="total">
             Total Selecionado: R$ {calcularTotal()}
           </div>
