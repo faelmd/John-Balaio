@@ -1,45 +1,86 @@
 /* src/styles/CaixaDashboard.css */
 
 .caixa-container {
-    min-height: 100vh;
-    padding: 2rem;
-    background-color: #fff;
-    font-family: Arial, sans-serif;
-  }
-  
-  .caixa-title {
-    font-size: 2.5rem;
-    font-weight: bold;
-    color: #ea580c;
-    margin-bottom: 2rem;
-    text-align: center;
-  }
-  
-  .mesas-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    justify-content: center;
-  }
-  
-  .mesa-button {
-    background-color: #f97316;
-    color: white;
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 9999px;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-  }
-  
-  .mesa-button:hover {
-    background-color: #ea580c;
-  }
-  
-  .mensagem {
-    text-align: center;
-    color: #444;
-    font-size: 1.1rem;
-  }
-  
+  min-height: 100vh;
+  padding: 2rem;
+  background-color: #fff;
+  font-family: Arial, sans-serif;
+}
+
+.caixa-title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #ea580c;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.mesas-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.mesa-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.mesa-button {
+  background-color: #f97316;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 9999px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.mesa-button:hover {
+  background-color: #ea580c;
+}
+
+.mensagem {
+  text-align: center;
+  color: #444;
+  font-size: 1.1rem;
+}
+
+/* ✅ Comprovantes Section */
+
+.comprovantes-lista {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.comprovante-button {
+  background-color: #0284c7;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 9999px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.comprovante-button:hover {
+  background-color: #0369a1;
+  transform: translateY(-2px);
+}
+
+.comprovante-button:active {
+  transform: scale(0.98);
+}
+
+.comprovantes-lista li {
+  display: flex;
+  justify-content: center;
+}

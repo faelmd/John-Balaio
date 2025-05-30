@@ -88,6 +88,12 @@ const Cozinha = () => {
             <span className={`status-tag ${item.status}`}>
               {item.status.replace('_', ' ').toUpperCase()}
             </span>
+
+            {/* 👨‍🍳 Mostrar nome do cozinheiro */}
+            {item.nome_cozinheiro && (item.status === 'em_preparo' || item.status === 'pronto') && (
+              <span className="cozinheiro-tag">👨‍🍳 {item.nome_cozinheiro}</span>
+            )}
+
             <div className="botoes">
               {item.status === 'pendente' && (
                 <button

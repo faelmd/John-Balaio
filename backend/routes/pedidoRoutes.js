@@ -72,10 +72,11 @@ router.put('/itens/:id/status', async (req, res) => {
 
   try {
     await pool.query(`
-      UPDATE itens_pedidos 
-      SET status = ?, nome_cozinheiro = ?
-      WHERE id = ?
-    `, [status, nome_cozinheiro || null, id]);
+  UPDATE itens_pedidos 
+  SET status = ?, 
+      nome_cozinheiro = IF(? = 'em_preparo', ?, nome_cozinheiro)
+  WHERE id = ?
+`, [status, status, nome_cozinheiro || null, id]);
 
     res.json({ success: true, message: 'Status do item atualizado' });
   } catch (err) {

@@ -1,41 +1,60 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import '../styles/CaixaDashboard.css';
 
 const CaixaDashboard = () => {
   const [mesasAbertas, setMesasAbertas] = useState([]);
-  const [mesasPagas, setMesasPagas] = useState([]);
+  const [comprovantes, setComprovantes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [feedback, setFeedback] = useState('');
   const navigate = useNavigate();
+
+  const fetchMesas = useCallback(async () => {
+    try {
+      const { data } = await axios.get('http://localhost:5000/api/pedidos/mesas');
+      const abertas = data.filter(m => m.status === 'aberta');
+      setMesasAbertas(abertas);
+    } catch (err) {
+      console.error('❌ Erro ao buscar mesas:', err);
+      alert('Erro ao buscar mesas.');
+    }
+  }, []);
+
+  const fetchComprovantes = useCallback(async () => {
+    try {
+      const { data } = await axios.get('http://localhost:5000/api/caixa/comprovantes');
+      setComprovantes(data);
+    } catch (err) {
+      console.error('❌ Erro ao buscar comprovantes:', err);
+      alert('Erro ao buscar comprovantes.');
+    }
+  }, []);
+
+  const fetchDados = useCallback(async () => {
+    setLoading(true);
+    await Promise.all([fetchMesas(), fetchComprovantes()]);
+    setLoading(false);
+  }, [fetchMesas, fetchComprovantes]);
 
   useEffect(() => {
     document.title = 'John Balaio | Caixa';
     const autorizado = localStorage.getItem('authCaixa') === 'true';
     if (!autorizado) navigate('/caixa-login');
-    else fetchMesas();
-  }, [navigate]);
-
-  const fetchMesas = async () => {
-    setLoading(true);
-    try {
-      const { data } = await axios.get('http://localhost:5000/api/pedidos/mesas');
-      const abertas = data.filter(m => m.status === 'aberta');
-      const pagas = data.filter(m => m.status === 'paga');
-      setMesasAbertas(abertas);
-      setMesasPagas(pagas);
-      setFeedback('');
-    } catch (err) {
-      console.error('Erro ao buscar mesas:', err);
-      setFeedback('Erro ao buscar mesas.');
-    } finally {
-      setLoading(false);
-    }
-  };
+    else fetchDados();
+  }, [navigate, fetchDados]);
 
   const handleMesaClick = (mesa) => {
     navigate(`/caixa/mesa/${mesa.mesa}`);
+  };
+
+  const downloadComprovante = (file) => {
+    const url = `http://localhost:5000/comprovantes/${file}`;
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = file;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const renderMesaList = (lista) => (
@@ -50,9 +69,6 @@ const CaixaDashboard = () => {
             <br />
             <small>
               Abertura: {new Date(mesa.abertura).toLocaleString('pt-BR')}
-              {mesa.fechamento && (
-                <><br />Fechamento: {new Date(mesa.fechamento).toLocaleString('pt-BR')}</>
-              )}
             </small>
           </button>
         </div>
@@ -62,19 +78,35 @@ const CaixaDashboard = () => {
 
   return (
     <div className="caixa-container">
-      <h1 className="caixa-title">Painel do Caixa</h1>
-      {feedback && <div className="feedback">{feedback}</div>}
+      <h1 className="caixa-title">🧾 Painel do Caixa</h1>
 
+      <h2>🟢 Mesas Abertas</h2>
       {loading ? (
         <p>Carregando mesas...</p>
+      ) : mesasAbertas.length > 0 ? (
+        renderMesaList(mesasAbertas)
       ) : (
-        <>
-          <h2>Mesas Abertas</h2>
-          {mesasAbertas.length ? renderMesaList(mesasAbertas) : <p>Nenhuma mesa aberta.</p>}
+        <p>🔍 Nenhuma mesa aberta no momento.</p>
+      )}
 
-          <h2>Mesas Pagas</h2>
-          {mesasPagas.length ? renderMesaList(mesasPagas) : <p>Nenhuma mesa paga.</p>}
-        </>
+      <h2>📄 Comprovantes de Mesas Encerradas</h2>
+      {loading ? (
+        <p>Carregando comprovantes...</p>
+      ) : comprovantes.length === 0 ? (
+        <p>🔍 Nenhum comprovante disponível.</p>
+      ) : (
+        <ul className="comprovantes-lista">
+          {comprovantes.map(file => (
+            <li key={file}>
+              <button
+                className="comprovante-button"
+                onClick={() => downloadComprovante(file)}
+              >
+                📄 {file}
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

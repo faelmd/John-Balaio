@@ -71,7 +71,11 @@ exports.listarPedidos = async (req, res) => {
         const pedidosComItens = await Promise.all(
             pedidos.map(async pedido => {
                 const [itens] = await db.promise().query(
-                    'SELECT * FROM itens_pedidos WHERE id_pedido = ?',
+                    `
+                    SELECT id, nome_produto, quantidade, status, nome_cozinheiro 
+                    FROM itens_pedidos 
+                    WHERE id_pedido = ?
+                    `,
                     [pedido.id]
                 );
                 return { ...pedido, itens };

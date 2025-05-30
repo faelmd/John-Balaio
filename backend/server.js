@@ -12,35 +12,38 @@ const adminRoutes = require('./routes/adminRoutes');
 const relatoriosRoutes = require('./routes/relatorios');
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
-// Servir arquivos de imagem da pasta "uploads"
+// 🔥 Static para uploads e comprovantes
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/comprovantes', express.static(path.join(__dirname, 'comprovantes')));
 
-// Rotas
+// 🔥 Rotas
 app.use('/api/produtos', productRoutes);
 app.use('/api/pedidos', pedidoRoutes);
 app.use('/api/caixa', caixaRoutes);
 app.use('/api/bar', barRoutes);
 app.use('/api/cozinha', cozinhaRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/relatorios', relatoriosRoutes); 
-// Iniciar o servidor
+app.use('/api/relatorios', relatoriosRoutes);
+
+// 🔥 Porta
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
 
+// 🔥 Teste conexão MySQL
 const pool = require('./db');
 
-// Testar conexão com banco
 (async () => {
-    try {
-        const connection = await pool.getConnection();
-        console.log('✅ Conectado ao banco de dados MySQL');
-        connection.release(); // libera a conexão
-    } catch (error) {
-        console.error('❌ Erro ao conectar ao banco de dados:', error);
-    }
+  try {
+    const connection = await pool.getConnection();
+    console.log('✅ Conectado ao banco MySQL');
+    connection.release();
+  } catch (error) {
+    console.error('❌ Erro na conexão com o banco:', error);
+  }
 })();

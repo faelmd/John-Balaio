@@ -25,11 +25,14 @@ const MesaCaixa = () => {
       });
 
       if (data.fechamento) {
-        setComprovante(`comprovante-mesa-${mesaId}-${new Date(data.fechamento).toISOString().replace(/[:.]/g, '-')}.txt`);
+        const dataFormatada = new Date(data.fechamento).toISOString().replace(/[:.]/g, '-');
+        setComprovante(`comprovante-mesa-${mesaId}-${dataFormatada}.txt`);
+      } else {
+        setComprovante('');
       }
 
     } catch (err) {
-      console.error('Erro ao buscar itens:', err);
+      console.error('❌ Erro ao buscar itens:', err);
       alert('Erro ao buscar itens da mesa.');
       setItens([]);
     } finally {
@@ -64,7 +67,7 @@ const MesaCaixa = () => {
       setSelecionados([]);
       fetchItens();
     } catch (err) {
-      console.error('Erro ao pagar:', err);
+      console.error('❌ Erro ao pagar:', err);
       alert('Erro ao registrar pagamento.');
     }
   };
@@ -74,7 +77,7 @@ const MesaCaixa = () => {
       const res = await axios.post(`http://localhost:5000/api/caixa/pagar/${mesaId}`);
       alert(`Pagamento confirmado. Comprovante gerado: ${res.data.arquivo}`);
 
-      const url = `http://localhost:5000/api/caixa/comprovantes/${res.data.arquivo}`;
+      const url = `http://localhost:5000/comprovantes/${res.data.arquivo}`;
       const link = document.createElement('a');
       link.href = url;
       link.download = res.data.arquivo;
@@ -86,7 +89,7 @@ const MesaCaixa = () => {
       setComprovante(res.data.arquivo);
       fetchItens();
     } catch (err) {
-      console.error('Erro ao pagar tudo:', err);
+      console.error('❌ Erro ao pagar tudo:', err);
       alert('Erro ao pagar conta completa.');
     }
   };
@@ -105,12 +108,11 @@ const MesaCaixa = () => {
         `Dividido em ${partes} partes: R$ ${res.data.valor_por_parte} por pessoa.`
       );
     } catch (err) {
-      console.error('Erro ao dividir conta:', err);
+      console.error('❌ Erro ao dividir conta:', err);
       alert('Erro ao dividir a conta.');
     }
   };
 
-  const todosItensPagos = itens.every(item => item.pago);
   const todosItensProntos = itens.every(item => item.status === 'pronto' || item.pago);
 
   return (
@@ -134,8 +136,26 @@ const MesaCaixa = () => {
 
       {loading ? (
         <p>Carregando itens...</p>
-      ) : itens.length === 0 ? (
-        <p>Todos os itens foram pagos.</p>
+      ) : mesaInfo.fechamento ? (
+        <div className="comprovante-section">
+          <p>✅ Conta encerrada.</p>
+          {comprovante && (
+            <button
+              className="baixar-comprovante"
+              onClick={() => {
+                const url = `http://localhost:5000/comprovantes/${comprovante}`;
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = comprovante;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              }}
+            >
+              📄 Baixar Comprovante
+            </button>
+          )}
+        </div>
       ) : (
         <>
           <ul className="itens-lista">
@@ -181,42 +201,21 @@ const MesaCaixa = () => {
             Confirmar Pagamento
           </button>
 
-          {!todosItensPagos && (
-            <>
-              <button
-                className="pagar-tudo"
-                onClick={pagarTudo}
-                disabled={!todosItensProntos}
-              >
-                Pagar Conta Inteira
-              </button>
+          <button
+            className="pagar-tudo"
+            onClick={pagarTudo}
+            disabled={!todosItensProntos}
+          >
+            Pagar Conta Inteira
+          </button>
 
-              <button
-                className="dividir-conta"
-                onClick={pagarDividido}
-                disabled={!todosItensProntos}
-              >
-                Pagar Dividido
-              </button>
-            </>
-          )}
-
-          {todosItensPagos && comprovante && (
-            <button
-              className="baixar-comprovante"
-              onClick={() => {
-                const url = `http://localhost:5000/api/caixa/comprovantes/${comprovante}`;
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = comprovante;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-              }}
-            >
-              Baixar Comprovante
-            </button>
-          )}
+          <button
+            className="dividir-conta"
+            onClick={pagarDividido}
+            disabled={!todosItensProntos}
+          >
+            Pagar Dividido
+          </button>
         </>
       )}
     </div>
