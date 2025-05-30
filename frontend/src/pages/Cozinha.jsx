@@ -5,22 +5,19 @@ import '../styles/Cozinha.css';
 
 const Cozinha = () => {
   const [pedidos, setPedidos] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [erro, setErro] = useState(null);
+  const [feedback, setFeedback] = useState('');
+  const [erro, setErro] = useState('');
   const navigate = useNavigate();
 
-  // ✅ Verificação de autenticação
   useEffect(() => {
     const autorizado = localStorage.getItem('authCozinha') === 'true';
     if (!autorizado) navigate('/cozinha-login');
+    else {
+      fetchPedidos();
+      const interval = setInterval(fetchPedidos, 5000);
+      return () => clearInterval(interval);
+    }
   }, [navigate]);
-
-  // ✅ Buscar pedidos periodicamente
-  useEffect(() => {
-    fetchPedidos();
-    const interval = setInterval(fetchPedidos, 5000);
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     document.title = 'John Balaio | Cozinha';
@@ -28,67 +25,55 @@ const Cozinha = () => {
 
   const fetchPedidos = async () => {
     try {
-      const { data } = await axios.get(`http://localhost:5000/api/pedidos?origem=cozinha`);
-      const pedidosOrdenados = data.sort(
+      const { data } = await axios.get(`http://localhost:5000/api/cozinha`);
+      const pedidosOrdenados = (data ?? []).sort(
         (a, b) => new Date(a.criado_em) - new Date(b.criado_em)
       );
       setPedidos(pedidosOrdenados);
-      setErro(null);
+      setErro('');
     } catch (err) {
       console.error('Erro ao buscar pedidos:', err);
-      setErro('Erro ao buscar pedidos. Tente novamente.');
-    } finally {
-      setLoading(false);
+      setErro('Erro ao buscar pedidos.');
     }
   };
 
-  // 🔥 Atualizar status de um ITEM
-  const atualizarStatus = async (itemId, novoStatusLabel) => {
-    let status;
-    let cozinheiro = '';
+  const atualizarStatus = async (itemId, status) => {
+    let nome_cozinheiro = '';
 
-    if (novoStatusLabel === 'Em preparo') {
-      cozinheiro = prompt('Digite o nome do cozinheiro:');
-      if (!cozinheiro) return;
-      status = 'em_preparo';
-    } else if (novoStatusLabel === 'Pronto') {
+    if (status === 'em_preparo') {
+      nome_cozinheiro = prompt('Digite o nome do cozinheiro:');
+      if (!nome_cozinheiro) return;
+    }
+
+    if (status === 'pronto') {
       const confirmar = window.confirm('Confirma que o item está PRONTO?');
       if (!confirmar) return;
-      status = 'pronto';
     }
 
     try {
-      await axios.put(`http://localhost:5000/api/itens/${itemId}/status`, {
+      await axios.put(`http://localhost:5000/api/pedidos/itens/${itemId}/status`, {
         status,
-        cozinheiro,
+        nome_cozinheiro,
       });
-
-      // Atualiza localmente o status do item
-      setPedidos(prevPedidos =>
-        prevPedidos.map(pedido => ({
-          ...pedido,
-          itens: pedido.itens.map(item =>
-            item.id === itemId
-              ? { ...item, status, cozinheiro: cozinheiro || item.cozinheiro }
-              : item
-          )
-        }))
-      );
+      setFeedback(`Item #${itemId} atualizado para ${status.toUpperCase()}`);
+      fetchPedidos();
     } catch (error) {
-      console.error('Erro ao atualizar status do item:', error);
-      setErro('Erro ao atualizar status do item. Tente novamente.');
+      console.error('Erro ao atualizar item:', error);
+      setFeedback('Erro ao atualizar item.');
     }
   };
 
+  const STATUS_COLUNAS = ['Pendentes', 'Em Preparo', 'Prontos'];
+
   const pedidosPorStatus = {
     Pendentes: pedidos.filter(p =>
-      p.itens?.some(item => item.status === 'pendente')
+      Array.isArray(p.itens) && p.itens.some(i => i.status === 'pendente')
     ),
     'Em Preparo': pedidos.filter(p =>
-      p.itens?.some(item => item.status === 'em_preparo')
+      Array.isArray(p.itens) && p.itens.some(i => i.status === 'em_preparo')
     ),
     Prontos: pedidos.filter(p =>
-      p.itens?.every(item => item.status === 'pronto')
+      Array.isArray(p.itens) && p.itens.length > 0 && p.itens.every(i => i.status === 'pronto')
     ),
   };
 
@@ -97,71 +82,56 @@ const Cozinha = () => {
       <p><strong>Mesa:</strong> {pedido.mesa}</p>
       <p><strong>Itens:</strong></p>
       <ul>
-        {Array.isArray(pedido.itens) && pedido.itens.length > 0 ? (
-          pedido.itens.map(item => (
-            <li key={item.id}>
-              🍽️ <strong>{item.nome_produto}</strong> ({item.quantidade}){' '}
-              <span className={`status-tag ${item.status}`}>
-                {item.status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
-              </span>
-              <div className="botoes">
-                {item.status === 'pendente' && (
-                  <button
-                    className="btn amarelo"
-                    onClick={() => atualizarStatus(item.id, 'Em preparo')}
-                  >
-                    Em preparo
-                  </button>
-                )}
-                {item.status === 'em_preparo' && (
-                  <button
-                    className="btn verde"
-                    onClick={() => atualizarStatus(item.id, 'Pronto')}
-                  >
-                    Pronto
-                  </button>
-                )}
-              </div>
-            </li>
-          ))
-        ) : (
-          <li>Nenhum item</li>
-        )}
+        {(pedido.itens ?? []).map(item => (
+          <li key={item.id}>
+            🍽️ <strong>{item.nome_produto}</strong> ({item.quantidade}){' '}
+            <span className={`status-tag ${item.status}`}>
+              {item.status.replace('_', ' ').toUpperCase()}
+            </span>
+            <div className="botoes">
+              {item.status === 'pendente' && (
+                <button
+                  className="btn amarelo"
+                  onClick={() => atualizarStatus(item.id, 'em_preparo')}
+                >
+                  Em preparo
+                </button>
+              )}
+              {item.status === 'em_preparo' && (
+                <button
+                  className="btn verde"
+                  onClick={() => atualizarStatus(item.id, 'pronto')}
+                >
+                  Pronto
+                </button>
+              )}
+            </div>
+          </li>
+        ))}
       </ul>
-
       {pedido.observacao && (
         <p><span className="observacao">📝 <em>{pedido.observacao}</em></span></p>
       )}
-      <p>
-        <strong>Hora:</strong>{' '}
-        {new Date(pedido.criado_em).toLocaleString('pt-BR', {
-          hour: '2-digit',
-          minute: '2-digit',
-          day: '2-digit',
-          month: '2-digit'
-        })}
-      </p>
+      <p><strong>Hora:</strong> {new Date(pedido.criado_em).toLocaleString('pt-BR')}</p>
     </div>
   );
 
   return (
     <div className="cozinha-container">
       <h1 className="titulo">Pedidos da Cozinha</h1>
+      {feedback && <div className="feedback">{feedback}</div>}
+      {erro && <div className="erro">{erro}</div>}
 
-      {erro && <p className="erro">{erro}</p>}
-
-      {loading ? (
-        <p>Carregando pedidos...</p>
-      ) : (
-        <div className="colunas">
-          {Object.entries(pedidosPorStatus).map(([status, lista]) => (
-            <div key={status} className="coluna">
-              <h2 className="subtitulo">{status}</h2>
-              {lista.length > 0 ? lista.map(renderPedidoCard) : <p>Nenhum pedido.</p>}
-            </div>
-          ))}
-        </div>
-      )}
+      <div className="colunas">
+        {STATUS_COLUNAS.map(status => (
+          <div key={status} className="coluna">
+            <h2 className="subtitulo">{status}</h2>
+            {pedidosPorStatus[status]?.length > 0
+              ? pedidosPorStatus[status].map(renderPedidoCard)
+              : <p>Nenhum pedido.</p>}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

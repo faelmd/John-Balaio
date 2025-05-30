@@ -5,7 +5,7 @@ const path = require('path');
 // Lista permitida de origens
 const ORIGENS_VALIDAS = ['cozinha', 'bar', 'outro'];
 
-// GET - Listar produtos
+// 🔍 GET - Listar produtos
 const getAllProducts = async (req, res) => {
     try {
         const [results] = await db.query(
@@ -13,17 +13,17 @@ const getAllProducts = async (req, res) => {
         );
         res.json(results);
     } catch (err) {
-        console.error('Erro ao buscar produtos:', err);
+        console.error('❌ Erro ao buscar produtos:', err);
         res.status(500).json({ error: 'Erro ao buscar produtos' });
     }
 };
 
-// POST - Criar produto
+// 🚀 POST - Criar produto
 const createProduct = async (req, res) => {
     try {
-        let { nome, descricao, preco, origem, categoria } = req.body;
+        const { nome, descricao, preco, origem, categoria } = req.body;
 
-        if (!nome || !descricao || !preco || !origem || !categoria) {
+        if (![nome, descricao, preco, origem, categoria].every(Boolean)) {
             return res.status(400).json({ error: 'Campos obrigatórios não informados' });
         }
 
@@ -36,7 +36,7 @@ const createProduct = async (req, res) => {
             return res.status(400).json({ error: 'Preço inválido' });
         }
 
-        const imagem = req.file ? req.file.filename : 'sem-imagem.png';
+        const imagem = req.file?.filename || 'sem-imagem.png';
 
         const query = `
             INSERT INTO produtos (nome, descricao, preco, imagem, disponivel, origem, categoria) 
@@ -54,20 +54,20 @@ const createProduct = async (req, res) => {
 
         res.status(201).json({ message: 'Produto criado com sucesso', id: result.insertId });
     } catch (err) {
-        console.error('Erro ao criar produto:', err);
+        console.error('❌ Erro ao criar produto:', err);
         res.status(500).json({ error: 'Erro ao criar produto' });
     }
 };
 
-// PUT - Editar produto
+// 🛠️ PUT - Editar produto
 const updateProduct = async (req, res) => {
     try {
         const { id } = req.params;
         const { nome, descricao, preco, origem, categoria } = req.body;
-        const imagem = req.file ? req.file.filename : null;
+        const imagem = req.file?.filename || null;
 
         const parsedPreco = parseFloat(preco);
-        if (!nome || !descricao || !origem || !categoria || isNaN(parsedPreco)) {
+        if (![nome, descricao, origem, categoria].every(Boolean) || isNaN(parsedPreco)) {
             return res.status(400).json({ error: 'Campos inválidos ou ausentes' });
         }
 
@@ -76,46 +76,50 @@ const updateProduct = async (req, res) => {
         }
 
         let query = `
-            UPDATE produtos SET nome=?, descricao=?, preco=?, origem=?, categoria=?
+            UPDATE produtos SET nome = ?, descricao = ?, preco = ?, origem = ?, categoria = ?
         `;
         const params = [nome, descricao, parsedPreco, origem, categoria];
 
         if (imagem) {
-            query += ', imagem=?';
+            query += ', imagem = ?';
             params.push(imagem);
         }
 
-        query += ' WHERE id=?';
+        query += ' WHERE id = ?';
         params.push(id);
 
         await db.query(query, params);
         res.json({ message: 'Produto atualizado com sucesso' });
     } catch (err) {
-        console.error('Erro ao atualizar produto:', err);
+        console.error('❌ Erro ao atualizar produto:', err);
         res.status(500).json({ error: 'Erro ao atualizar produto', detalhe: err.message });
     }
 };
 
-// PATCH - Atualizar status de disponibilidade
+// 🟢 PATCH - Atualizar status de disponibilidade
 const updateProductStatus = async (req, res) => {
     const { id } = req.params;
     const { disponivel } = req.body;
 
+    if (typeof disponivel !== 'boolean' && disponivel !== 0 && disponivel !== 1) {
+        return res.status(400).json({ error: 'Valor de disponibilidade inválido' });
+    }
+
     try {
         await db.query('UPDATE produtos SET disponivel = ? WHERE id = ?', [disponivel, id]);
-        res.sendStatus(200);
+        res.json({ message: 'Status de disponibilidade atualizado com sucesso' });
     } catch (err) {
-        console.error('Erro ao atualizar status do produto:', err);
+        console.error('❌ Erro ao atualizar status do produto:', err);
         res.status(500).json({ error: 'Erro ao atualizar status do produto' });
     }
 };
 
-// DELETE - Excluir produto
+// 🔥 DELETE - Excluir produto
 const deleteProduct = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const [results] = await db.query('SELECT imagem FROM produtos WHERE id=?', [id]);
+        const [results] = await db.query('SELECT imagem FROM produtos WHERE id = ?', [id]);
         const imagem = results[0]?.imagem;
 
         if (imagem && imagem !== 'sem-imagem.png') {
@@ -127,10 +131,10 @@ const deleteProduct = async (req, res) => {
             }
         }
 
-        await db.query('DELETE FROM produtos WHERE id=?', [id]);
+        await db.query('DELETE FROM produtos WHERE id = ?', [id]);
         res.json({ message: 'Produto excluído com sucesso' });
     } catch (err) {
-        console.error('Erro ao excluir produto:', err);
+        console.error('❌ Erro ao excluir produto:', err);
         res.status(500).json({ error: 'Erro ao excluir produto' });
     }
 };

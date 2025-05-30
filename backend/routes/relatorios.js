@@ -5,29 +5,29 @@ const path = require('path');
 
 const pastaRelatorios = path.join(__dirname, '../relatorios');
 
-// 🗂️ Listar arquivos de relatório
+// 🗂️ GET → Listar relatórios
 router.get('/', async (req, res) => {
   try {
     const arquivos = await fs.readdir(pastaRelatorios);
-    const txtFiles = arquivos.filter(file => file.endsWith('.txt')).sort().reverse();
-    res.status(200).json(txtFiles);
+    const pdfFiles = arquivos.filter(file => file.endsWith('.pdf')).sort().reverse();
+    res.status(200).json(pdfFiles);
   } catch (err) {
     console.error('Erro ao listar relatórios:', err);
     res.status(500).json({ error: 'Erro ao listar relatórios' });
   }
 });
 
-// 📥 Baixar um relatório específico
-router.get('/download/:nomeArquivo', async (req, res) => {
+// 📥 GET → Download de relatório
+router.get('/download/:nomeArquivo', (req, res) => {
   const { nomeArquivo } = req.params;
   const caminho = path.join(pastaRelatorios, nomeArquivo);
 
-  try {
-    res.download(caminho);
-  } catch (err) {
-    console.error('Erro ao baixar relatório:', err);
-    res.status(500).json({ error: 'Erro ao baixar relatório' });
-  }
+  res.download(caminho, err => {
+    if (err) {
+      console.error('Erro ao baixar relatório:', err);
+      res.status(500).json({ error: 'Erro ao baixar relatório' });
+    }
+  });
 });
 
 module.exports = router;

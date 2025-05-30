@@ -99,7 +99,8 @@ h2 {
 /* ---------------------------- */
 /* BOTÕES */
 /* ---------------------------- */
-.confirmar {
+.confirmar,
+.baixar-comprovante {
   margin-top: 20px;
   width: 100%;
   background-color: #ff6600;
@@ -113,17 +114,19 @@ h2 {
   transition: background-color 0.3s ease;
 }
 
-.confirmar:disabled {
+.confirmar:disabled,
+.baixar-comprovante:disabled {
   background-color: #ccc;
   cursor: not-allowed;
 }
 
-.confirmar:not(:disabled):hover {
+.confirmar:not(:disabled):hover,
+.baixar-comprovante:not(:disabled):hover {
   background-color: #e55b00;
 }
 
 .pagar-tudo,
-.dividir-conta {
+.dividir-conta{
   margin-top: 12px;
   width: 100%;
   background-color: #000;
@@ -138,18 +141,18 @@ h2 {
 }
 
 .pagar-tudo:hover,
-.dividir-conta:hover {
+.dividir-conta:hover{
   background-color: #333;
   transform: scale(1.05);
 }
 
 .pagar-tudo:focus,
-.dividir-conta:focus {
+.dividir-conta:focus{
   outline: 2px solid #ff6600;
 }
 
 .pagar-tudo:active,
-.dividir-conta:active {
+.dividir-conta:active{
   background-color: #e55b00;
   transform: scale(1);
 }
@@ -207,7 +210,8 @@ h2 {
 
   .confirmar,
   .pagar-tudo,
-  .dividir-conta {
+  .dividir-conta,
+  .baixar-comprovante {
     padding: 12px;
     font-size: 15px;
   }

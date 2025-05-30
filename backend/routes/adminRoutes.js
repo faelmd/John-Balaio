@@ -1,30 +1,39 @@
 const express = require('express');
 const router = express.Router();
 const fs = require('fs').promises;
+const fsSync = require('fs');
 const path = require('path');
 const pool = require('../db');
+const PDFDocument = require('pdfkit');
 
-// 🔥 Rota de encerrar expediente + gerar relatório
+const pastaRelatorios = path.join(__dirname, '../relatorios');
+
+// 🔥 POST → /api/relatorios/finalizar-expediente
 router.post('/finalizar-expediente', async (req, res) => {
   const { token } = req.body;
-
   if (token !== process.env.ADMIN_TOKEN) {
     return res.status(403).json({ error: 'Acesso negado' });
   }
 
   try {
-    const dataHora = new Date().toLocaleString('pt-BR').replace(/[/:]/g, '-');
-    const nomeArquivo = `relatorio-${dataHora}.txt`;
-    const caminho = path.join(__dirname, '../relatorios', nomeArquivo);
+    const dataHora = new Date().toISOString().replace(/[:.]/g, '-');
+    const nomeArquivo = `relatorio-${dataHora}.pdf`;
+    const caminho = path.join(pastaRelatorios, nomeArquivo);
 
     const [pedidos] = await pool.query('SELECT * FROM pedidos ORDER BY criado_em ASC');
-
     if (pedidos.length === 0) {
       return res.status(400).json({ error: 'Não há pedidos para encerrar.' });
     }
 
-    let conteudo = `===== RELATÓRIO DE EXPEDIENTE =====\n`;
-    conteudo += `Data/Hora de Encerramento: ${new Date().toLocaleString('pt-BR')}\n\n`;
+    await fs.mkdir(pastaRelatorios, { recursive: true });
+
+    const doc = new PDFDocument();
+    doc.pipe(fsSync.createWriteStream(caminho));
+
+    doc.fontSize(18).text('Relatório de Expediente - John Balaio', { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(12).text(`Data de encerramento: ${new Date().toLocaleString('pt-BR')}`);
+    doc.moveDown();
 
     let totalGeral = 0;
 
@@ -34,33 +43,44 @@ router.post('/finalizar-expediente', async (req, res) => {
         [pedido.id]
       );
 
-      conteudo += `Mesa: ${pedido.mesa}\n`;
-      conteudo += `Criado em: ${pedido.criado_em}\n`;
-      conteudo += `Atualizado em: ${pedido.atualizado_em}\n`;
-      conteudo += `Cozinheiro: ${pedido.nome_cozinheiro || 'N/A'}\n`;
-      conteudo += `Observação: ${pedido.observacao || 'N/A'}\n`;
-      conteudo += `Itens:\n`;
+      const abertura = pedido.abertura
+        ? new Date(pedido.abertura).toLocaleString('pt-BR')
+        : 'N/A';
+      const fechamento = pedido.fechamento
+        ? new Date(pedido.fechamento).toLocaleString('pt-BR')
+        : 'Em aberto';
+
+      doc.fontSize(14).text(`Mesa: ${pedido.mesa}`, { underline: true });
+      doc.fontSize(10).text(`Abertura: ${abertura}`);
+      doc.fontSize(10).text(`Fechamento: ${fechamento}`);
+      doc.fontSize(10).text(`Observação: ${pedido.observacao || 'N/A'}`);
+      doc.moveDown(0.5);
 
       let totalPedido = 0;
-
-      for (const item of itens) {
+      itens.forEach(item => {
         const subtotal = item.preco_unitario * item.quantidade;
         totalPedido += subtotal;
-        conteudo += `  - ${item.nome_produto} | ${item.quantidade}x | R$${item.preco_unitario} | Subtotal: R$${subtotal.toFixed(2)} | Pago: ${item.pago ? 'Sim' : 'Não'}\n`;
-      }
 
-      conteudo += `Total do pedido: R$${totalPedido.toFixed(2)}\n`;
-      conteudo += `-----------------------------------\n\n`;
+        doc.text(
+          `- ${item.nome_produto} | ${item.quantidade}x | R$${item.preco_unitario.toFixed(2)} | Subtotal: R$${subtotal.toFixed(2)} | Pago: ${item.pago ? 'Sim' : 'Não'} | Status: ${item.status}`
+        );
+      });
+
+      doc.text(`Total do pedido: R$${totalPedido.toFixed(2)}`);
+      doc.moveDown(1);
 
       totalGeral += totalPedido;
     }
 
-    conteudo += `TOTAL GERAL DO EXPEDIENTE: R$${totalGeral.toFixed(2)}\n`;
-    conteudo += `===================================\n`;
+    doc.moveDown();
+    doc.fontSize(14).text(`TOTAL GERAL DO EXPEDIENTE: R$${totalGeral.toFixed(2)}`, {
+      align: 'center',
+      underline: true,
+    });
 
-    await fs.mkdir(path.join(__dirname, '../relatorios'), { recursive: true });
-    await fs.writeFile(caminho, conteudo);
+    doc.end();
 
+    // 🔥 Limpar base
     await pool.query('DELETE FROM itens_pedidos');
     await pool.query('DELETE FROM pedidos');
 
@@ -70,7 +90,7 @@ router.post('/finalizar-expediente', async (req, res) => {
       arquivo: nomeArquivo,
     });
   } catch (err) {
-    console.error('Erro ao finalizar expediente:', err);
+    console.error('❌ Erro ao finalizar expediente:', err);
     res.status(500).json({ error: 'Erro ao finalizar expediente.' });
   }
 });
