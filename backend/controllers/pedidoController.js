@@ -91,40 +91,40 @@ exports.listarPedidos = async (req, res) => {
 
 // Marcar itens de um pedido como "em_preparo" e registrar nome do cozinheiro
 exports.marcarComoEmPreparo = async (req, res) => {
-    const { id } = req.params;
-    const { nome_cozinheiro } = req.body;
+  const { id } = req.params;
+  const { nome_cozinheiro } = req.body;
 
-    if (!nome_cozinheiro) {
-        return res.status(400).json({ message: 'Nome do cozinheiro é obrigatório.' });
+  if (!nome_cozinheiro) {
+    return res.status(400).json({ message: 'Nome do cozinheiro é obrigatório.' });
+  }
+
+  try {
+    const [results] = await db.promise().query(
+      'SELECT * FROM pedidos WHERE id = ?',
+      [id]
+    );
+
+    if (!results.length) {
+      return res.status(404).json({ message: 'Pedido não encontrado.' });
     }
 
-    try {
-        const [results] = await db.promise().query(
-            'SELECT * FROM pedidos WHERE id = ?',
-            [id]
-        );
+    // 🔥 Atualiza nome do cozinheiro no pedido (opcional)
+    await db.promise().query(
+      'UPDATE pedidos SET nome_cozinheiro = ? WHERE id = ?',
+      [nome_cozinheiro, id]
+    );
 
-        if (!results.length) {
-            return res.status(404).json({ message: 'Pedido não encontrado.' });
-        }
+    // 🔥 Atualiza status dos itens + nome do cozinheiro nos itens
+    await db.promise().query(
+      'UPDATE itens_pedidos SET status = ?, nome_cozinheiro = ? WHERE id_pedido = ?',
+      ['em_preparo', nome_cozinheiro, id]
+    );
 
-        // Atualiza nome do cozinheiro no pedido
-        await db.promise().query(
-            'UPDATE pedidos SET nome_cozinheiro = ? WHERE id = ?',
-            [nome_cozinheiro, id]
-        );
-
-        // Atualiza status dos itens
-        await db.promise().query(
-            'UPDATE itens_pedidos SET status = ? WHERE id_pedido = ?',
-            ['em_preparo', id]
-        );
-
-        res.json({ message: 'Itens do pedido marcados como "em_preparo".' });
-    } catch (error) {
-        console.error('Erro ao atualizar pedido:', error.message);
-        res.status(500).json({ message: 'Erro ao atualizar pedido.' });
-    }
+    res.json({ message: 'Itens do pedido marcados como "em_preparo".' });
+  } catch (error) {
+    console.error('Erro ao atualizar pedido:', error.message);
+    res.status(500).json({ message: 'Erro ao atualizar pedido.' });
+  }
 };
 
 // Marcar itens de um pedido como "pronto"

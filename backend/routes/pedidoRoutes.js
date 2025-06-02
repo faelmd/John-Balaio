@@ -43,17 +43,48 @@ router.get('/', async (req, res) => {
         i.preco_unitario,
         i.status,
         i.pago,
+        i.origem,
+        i.nome_cozinheiro, 
+        p.id AS pedido_id,
         p.mesa,
         p.criado_em,
-        p.observacao,
-        i.nome_cozinheiro
+        p.observacao
       FROM itens_pedidos i
       JOIN pedidos p ON p.id = i.id_pedido
       WHERE i.origem = ?
       ORDER BY p.criado_em ASC
     `, [origem]);
 
-    res.json(itens);
+    const pedidosMap = {};
+
+    itens.forEach(item => {
+      const pedidoId = item.pedido_id;
+      if (!pedidosMap[pedidoId]) {
+        pedidosMap[pedidoId] = {
+          id: pedidoId,
+          mesa: item.mesa,
+          criado_em: item.criado_em,
+          observacao: item.observacao,
+          nome_cozinheiro: item.nome_cozinheiro,
+          itens: []
+        };
+      }
+
+      pedidosMap[pedidoId].itens.push({
+        id: item.id,
+        nome_produto: item.nome_produto,
+        quantidade: item.quantidade,
+        status: item.status,
+        preco_unitario: item.preco_unitario,
+        pago: item.pago,
+        origem: item.origem,
+        nome_cozinheiro: item.nome_cozinheiro // 🔥 GARANTIR QUE ESTÁ AQUI
+      });
+    });
+
+    const pedidos = Object.values(pedidosMap);
+
+    res.json(pedidos);
   } catch (err) {
     console.error('❌ Erro ao buscar itens:', err);
     res.status(500).json({ error: 'Erro ao buscar itens' });
@@ -72,11 +103,12 @@ router.put('/itens/:id/status', async (req, res) => {
 
   try {
     await pool.query(`
-  UPDATE itens_pedidos 
-  SET status = ?, 
-      nome_cozinheiro = IF(? = 'em_preparo', ?, nome_cozinheiro)
-  WHERE id = ?
-`, [status, status, nome_cozinheiro || null, id]);
+      UPDATE itens_pedidos 
+      SET 
+        status = ?, 
+        nome_cozinheiro = COALESCE(NULLIF(?, ''), nome_cozinheiro)
+      WHERE id = ?
+    `, [status, nome_cozinheiro, id]);
 
     res.json({ success: true, message: 'Status do item atualizado' });
   } catch (err) {

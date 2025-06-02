@@ -25,7 +25,7 @@ const Cozinha = () => {
 
   const fetchPedidos = async () => {
     try {
-      const { data } = await axios.get(`http://localhost:5000/api/cozinha`);
+      const { data } = await axios.get(`http://localhost:5000/api/cozinha?origem=cozinha`);
       const pedidosOrdenados = (data ?? []).sort(
         (a, b) => new Date(a.criado_em) - new Date(b.criado_em)
       );

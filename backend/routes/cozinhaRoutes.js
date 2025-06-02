@@ -16,6 +16,7 @@ router.get('/', async (req, res) => {
         i.quantidade,
         i.origem,
         i.status,
+        i.nome_cozinheiro,
         i.pago
       FROM pedidos p
       JOIN itens_pedidos i ON p.id = i.id_pedido
@@ -41,7 +42,8 @@ router.get('/', async (req, res) => {
         quantidade: item.quantidade,
         status: item.status,
         pago: item.pago,
-        origem: item.origem
+        origem: item.origem,
+        nome_cozinheiro: item.nome_cozinheiro
       });
     }
 

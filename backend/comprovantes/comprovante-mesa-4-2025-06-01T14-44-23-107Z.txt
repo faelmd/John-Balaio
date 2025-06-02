@@ -1,0 +1,9 @@
+=== COMPROVANTE DE PAGAMENTO ===
+Mesa: 4
+Data/Hora: 01/06/2025, 11:44:23
+
+Ancho 400g - 1x R$89.00
+Laranja Natural - 2x R$12.00
+
+TOTAL: R$113.00
+===============================
