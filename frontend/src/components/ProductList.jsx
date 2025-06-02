@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import { API } from '../api';
 
 const EditProductModal = ({ product, onClose }) => {
   const [formData, setFormData] = useState({
@@ -19,7 +19,7 @@ const EditProductModal = ({ product, onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.put(`http://localhost:5000/api/produtos/${product.id}`, formData);
+      await API.put(`/api/produtos/${product.id}`, formData);
       alert('Produto atualizado com sucesso!');
       onClose(); // Fecha o modal e atualiza a lista
     } catch (err) {

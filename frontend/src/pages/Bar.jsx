@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { API } from '../api';
 import '../styles/Bar.css';
 
 const Bar = () => {
@@ -21,7 +21,7 @@ const Bar = () => {
 
   const fetchPedidos = async () => {
     try {
-      const { data } = await axios.get('http://localhost:5000/api/bar?origem=bar');
+      const { data } = await API.get('/api/bar?origem=bar');
       setPedidos(data);
       setErro('');
     } catch (err) {
@@ -35,7 +35,7 @@ const Bar = () => {
     if (!confirmar) return;
 
     try {
-      await axios.put(`http://localhost:5000/api/pedidos/itens/${itemId}/status`, {
+      await API.put(`/api/pedidos/itens/${itemId}/status`, {
         status,
         nome_cozinheiro: null,
       });

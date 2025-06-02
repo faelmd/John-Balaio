@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import axios from 'axios';
+import { API } from '../api';
 import { useNavigate } from 'react-router-dom';
 import '../styles/CaixaDashboard.css';
 
@@ -11,7 +11,7 @@ const CaixaDashboard = () => {
 
   const fetchMesas = useCallback(async () => {
     try {
-      const { data } = await axios.get('http://localhost:5000/api/pedidos/mesas');
+      const { data } = await API.get('/api/pedidos/mesas');
       const abertas = data.filter(m => m.status === 'aberta');
       setMesasAbertas(abertas);
     } catch (err) {
@@ -22,7 +22,7 @@ const CaixaDashboard = () => {
 
   const fetchComprovantes = useCallback(async () => {
     try {
-      const { data } = await axios.get('http://localhost:5000/api/caixa/comprovantes');
+      const { data } = await API.get('/api/caixa/comprovantes');
       setComprovantes(data);
     } catch (err) {
       console.error('❌ Erro ao buscar comprovantes:', err);
@@ -48,7 +48,7 @@ const CaixaDashboard = () => {
   };
 
   const downloadComprovante = (file) => {
-    const url = `http://localhost:5000/comprovantes/${file}`;
+    const url = `/comprovantes/${file}`;
     const link = document.createElement('a');
     link.href = url;
     link.download = file;

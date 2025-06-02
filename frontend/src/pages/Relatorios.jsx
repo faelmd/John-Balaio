@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { API } from '../api';
 import '../styles/Relatorios.css';
 
 const Relatorios = () => {
@@ -13,7 +13,7 @@ const Relatorios = () => {
 
   const fetchRelatorios = async () => {
     try {
-      const { data } = await axios.get('http://localhost:5000/api/relatorios');
+      const { data } = await API.get('/api/relatorios');
       setRelatorios(data);
     } catch (err) {
       console.error('Erro ao buscar relatórios:', err);
@@ -22,7 +22,7 @@ const Relatorios = () => {
   };
 
   const handleDownload = (nome) => {
-    window.open(`http://localhost:5000/api/relatorios/download/${nome}`, '_blank');
+    window.open(`/api/relatorios/download/${nome}`, '_blank');
   };
 
   return (

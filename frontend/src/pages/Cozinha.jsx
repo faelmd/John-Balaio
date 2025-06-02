@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { API } from '../api'; // Importa a instância do axios com baseURL
 import '../styles/Cozinha.css';
 
 const Cozinha = () => {
@@ -25,7 +25,7 @@ const Cozinha = () => {
 
   const fetchPedidos = async () => {
     try {
-      const { data } = await axios.get(`http://localhost:5000/api/cozinha?origem=cozinha`);
+      const { data } = await API.get('/api/cozinha?origem=cozinha');
       const pedidosOrdenados = (data ?? []).sort(
         (a, b) => new Date(a.criado_em) - new Date(b.criado_em)
       );
@@ -51,7 +51,7 @@ const Cozinha = () => {
     }
 
     try {
-      await axios.put(`http://localhost:5000/api/pedidos/itens/${itemId}/status`, {
+      await API.put(`/api/pedidos/itens/${itemId}/status`, {
         status,
         nome_cozinheiro,
       });

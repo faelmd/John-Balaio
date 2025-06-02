@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { API } from '../api';
 import ProductCard from '../components/ProductCard';
 import ProductForm from '../components/ProductForm';
 import '../styles/Administrador.css';
@@ -14,7 +14,7 @@ const Administrador = () => {
 
   const fetchProducts = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/produtos');
+      const response = await API.get('/api/produtos');
       setProducts(response.data);
     } catch (error) {
       console.error('Erro ao buscar produtos:', error);
@@ -29,7 +29,7 @@ const Administrador = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Tem certeza que deseja excluir este produto?')) {
       try {
-        await axios.delete(`http://localhost:5000/api/produtos/${id}`);
+        await API.delete(`/api/produtos/${id}`);
         fetchProducts();
       } catch (error) {
         console.error('Erro ao excluir produto:', error);
@@ -39,7 +39,7 @@ const Administrador = () => {
 
   const handleToggleAvailability = async (id, disponivel) => {
     try {
-      await axios.patch(`http://localhost:5000/api/produtos/${id}/status`, { disponivel });
+      await API.patch(`/api/produtos/${id}/status`, { disponivel });
       fetchProducts();
     } catch (error) {
       console.error('Erro ao alterar disponibilidade:', error);
@@ -67,7 +67,7 @@ const Administrador = () => {
     );
     if (!confirmar) return;
     try {
-      const response = await axios.post('http://localhost:5000/api/admin/finalizar-expediente', {
+      const response = await API.post('/api/admin/finalizar-expediente', {
         token: 'supersecreto123'
       });
       if (response.data.success) {

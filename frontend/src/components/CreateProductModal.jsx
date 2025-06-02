@@ -12,7 +12,7 @@ import {
   Stack,
   TextField,
 } from "@mui/material";
-import axios from "axios";
+import { API } from '../api';
 
 export default function CreateProductModal({
   open,
@@ -101,14 +101,14 @@ export default function CreateProductModal({
 
     try {
       if (productToEdit) {
-        await axios.put(
-          `http://localhost:5000/api/produtos/${productToEdit.id}`,
+        await API.put(
+          `/api/produtos/${productToEdit.id}`,
           formData,
           { headers: { "Content-Type": "multipart/form-data" } }
         );
         alert("Produto atualizado com sucesso!");
       } else {
-        await axios.post("http://localhost:5000/api/produtos", formData, {
+        await API.post("/api/produtos", formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
         alert("Produto cadastrado com sucesso!");

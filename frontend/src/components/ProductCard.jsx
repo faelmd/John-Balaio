@@ -3,7 +3,7 @@ import '../styles/ProductCard.css';
 
 const ProductCard = ({ product, onEdit, onDelete, onToggleAvailability }) => {
   const imageUrl = product.imagem
-    ? `http://localhost:5000/uploads/${product.imagem}`
+    ? `/uploads/${product.imagem}`
     : '/default-image.jpg'; // Imagem padrão
 
   return (

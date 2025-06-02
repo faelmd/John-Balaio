@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { API } from '../api';
 import '../styles/ProductForm.css';
 
 const ProductForm = ({ onProductSaved, productToEdit, onClose }) => {
@@ -42,12 +42,12 @@ const ProductForm = ({ onProductSaved, productToEdit, onClose }) => {
 
     try {
       if (productToEdit) {
-        await axios.put(`http://localhost:5000/api/produtos/${productToEdit.id}`, formData, {
+        await API.put(`/api/produtos/${productToEdit.id}`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         alert('Produto atualizado com sucesso!');
       } else {
-        await axios.post('http://localhost:5000/api/produtos', formData, {
+        await API.post('/api/produtos', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         alert('Produto cadastrado com sucesso!');

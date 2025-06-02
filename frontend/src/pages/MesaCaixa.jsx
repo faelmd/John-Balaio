@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { API } from '../api';
 import '../styles/MesaCaixa.css';
 
 const MesaCaixa = () => {
@@ -16,7 +16,7 @@ const MesaCaixa = () => {
   const fetchItens = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await axios.get(`http://localhost:5000/api/caixa/mesa/${mesaId}`);
+      const { data } = await API.get(`/api/caixa/mesa/${mesaId}`);
 
       setItens(Array.isArray(data.itens) ? data.itens : []);
       setMesaInfo({
@@ -60,7 +60,7 @@ const MesaCaixa = () => {
 
   const confirmarPagamento = async () => {
     try {
-      await axios.put('http://localhost:5000/api/caixa/pagar', {
+      await API.put('/api/caixa/pagar', {
         itemIds: selecionados,
       });
       alert('Pagamento registrado.');
@@ -74,10 +74,10 @@ const MesaCaixa = () => {
 
   const pagarTudo = async () => {
     try {
-      const res = await axios.post(`http://localhost:5000/api/caixa/pagar/${mesaId}`);
+      const res = await API.post(`/api/caixa/pagar/${mesaId}`);
       alert(`Pagamento confirmado. Comprovante gerado: ${res.data.arquivo}`);
 
-      const url = `http://localhost:5000/comprovantes/${res.data.arquivo}`;
+      const url = `/comprovantes/${res.data.arquivo}`;
       const link = document.createElement('a');
       link.href = url;
       link.download = res.data.arquivo;
@@ -102,7 +102,7 @@ const MesaCaixa = () => {
     }
 
     try {
-      const res = await axios.post(`http://localhost:5000/api/caixa/pagar-dividido/${mesaId}`, { partes });
+      const res = await API.post(`/api/caixa/pagar-dividido/${mesaId}`, { partes });
       alert(
         `Total: R$ ${res.data.total}\n` +
         `Dividido em ${partes} partes: R$ ${res.data.valor_por_parte} por pessoa.`
@@ -143,7 +143,7 @@ const MesaCaixa = () => {
             <button
               className="baixar-comprovante"
               onClick={() => {
-                const url = `http://localhost:5000/comprovantes/${comprovante}`;
+                const url = `/comprovantes/${comprovante}`;
                 const link = document.createElement('a');
                 link.href = url;
                 link.download = comprovante;
