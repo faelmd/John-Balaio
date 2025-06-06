@@ -58,32 +58,36 @@ const MesaCaixa = () => {
       .toFixed(2);
   };
 
-  const confirmarPagamento = async () => {
-    try {
-      await API.put('/api/caixa/pagar', {
-        itemIds: selecionados,
-      });
+const confirmarPagamento = async () => {
+  try {
+    const res = await API.put('/api/caixa/pagar', {
+      itemIds: selecionados,
+    });
+
+    if (res.data.encerrado) {
+      alert('✅ Todos os itens foram pagos. Mesa encerrada.');
+
+      // Adiciona comprovante à lista se disponível
+      if (res.data.comprovante) {
+        setComprovante(res.data.comprovante);
+      }
+    } else {
       alert('Pagamento registrado.');
-      setSelecionados([]);
-      fetchItens();
-    } catch (err) {
-      console.error('❌ Erro ao pagar:', err);
-      alert('Erro ao registrar pagamento.');
     }
-  };
+
+    setSelecionados([]);
+    fetchItens();
+  } catch (err) {
+    console.error('❌ Erro ao pagar:', err);
+    alert('Erro ao registrar pagamento.');
+  }
+};
 
   const pagarTudo = async () => {
     try {
       const res = await API.post(`/api/caixa/pagar/${mesaId}`);
-      alert(`Pagamento confirmado. Comprovante gerado: ${res.data.arquivo}`);
 
-      const url = `/comprovantes/${res.data.arquivo}`;
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = res.data.arquivo;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      alert(`Pagamento confirmado. Comprovante gerado e disponível no painel.`);
 
       setSelecionados([]);
       setComprovante(res.data.arquivo);
