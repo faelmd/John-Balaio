@@ -20,15 +20,16 @@ const CaixaDashboard = () => {
     }
   }, []);
 
-  const fetchComprovantes = useCallback(async () => {
-    try {
-      const { data } = await API.get('/api/caixa/comprovantes');
-      setComprovantes(data);
-    } catch (err) {
-      console.error('❌ Erro ao buscar comprovantes:', err);
-      alert('Erro ao buscar comprovantes.');
-    }
-  }, []);
+const fetchComprovantes = useCallback(async () => {
+  try {
+    const { data } = await API.get('/api/caixa/comprovantes');
+    const ordenados = data.sort((a, b) => b.localeCompare(a)); // ordena do mais novo para o mais velho
+    setComprovantes(ordenados);
+  } catch (err) {
+    console.error('❌ Erro ao buscar comprovantes:', err);
+    alert('Erro ao buscar comprovantes.');
+  }
+}, []);
 
   const fetchDados = useCallback(async () => {
     setLoading(true);
