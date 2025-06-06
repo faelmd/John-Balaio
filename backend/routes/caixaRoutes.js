@@ -78,11 +78,65 @@ router.put('/pagar', async (req, res) => {
   }
 
   try {
-    const [result] = await pool.query(`
-      UPDATE itens_pedidos SET pago = 1 WHERE id IN (?)
-    `, [itemIds]);
+    // Atualiza os itens como pagos
+    await pool.query(`UPDATE itens_pedidos SET pago = 1 WHERE id IN (?)`, [itemIds]);
 
-    res.json({ success: true, updated: result.affectedRows });
+    // Pega o ID da mesa a partir de qualquer item
+    const [[{ mesa }]] = await pool.query(`
+      SELECT p.mesa
+      FROM itens_pedidos i
+      JOIN pedidos p ON i.id_pedido = p.id
+      WHERE i.id = ?
+      LIMIT 1
+    `, [itemIds[0]]);
+
+    // Verifica se todos os itens da mesa estão pagos
+    const [[{ totalNaoPago }]] = await pool.query(`
+      SELECT COUNT(*) AS totalNaoPago
+      FROM itens_pedidos i
+      JOIN pedidos p ON i.id_pedido = p.id
+      WHERE p.mesa = ? AND i.pago = 0 AND p.fechamento IS NULL
+    `, [mesa]);
+
+    // Se todos os itens pagos, encerra a mesa e gera comprovante
+    if (totalNaoPago === 0) {
+      await pool.query(`
+        UPDATE pedidos SET fechamento = CURRENT_TIMESTAMP
+        WHERE mesa = ? AND fechamento IS NULL
+      `, [mesa]);
+
+      const [itens] = await pool.query(`
+        SELECT nome_produto, quantidade, preco_unitario
+        FROM itens_pedidos i
+        JOIN pedidos p ON i.id_pedido = p.id
+        WHERE p.mesa = ?
+      `, [mesa]);
+
+      const total = itens.reduce((acc, item) =>
+        acc + item.quantidade * item.preco_unitario, 0
+      );
+
+      const dataHora = new Date().toISOString().replace(/[:.]/g, '-');
+      const nomeArquivo = `comprovante-mesa-${mesa}-${dataHora}.txt`;
+      const caminho = path.join(__dirname, '../comprovantes', nomeArquivo);
+
+      let conteudo = `=== COMPROVANTE DE PAGAMENTO ===\n`;
+      conteudo += `Mesa: ${mesa}\nData/Hora: ${new Date().toLocaleString('pt-BR')}\n\n`;
+
+      itens.forEach(item => {
+        conteudo += `${item.nome_produto} - ${item.quantidade}x R$${item.preco_unitario.toFixed(2)}\n`;
+      });
+
+      conteudo += `\nTOTAL: R$${total.toFixed(2)}\n===============================\n`;
+
+      await fs.mkdir(path.dirname(caminho), { recursive: true });
+      await fs.writeFile(caminho, conteudo);
+
+      return res.json({ success: true, encerrado: true, comprovante: nomeArquivo });
+    }
+
+    res.json({ success: true, encerrado: false });
+
   } catch (err) {
     console.error('❌ Erro no pagamento:', err);
     res.status(500).json({ error: 'Erro ao confirmar pagamento' });
