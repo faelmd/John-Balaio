@@ -18,16 +18,28 @@ router.get('/', async (req, res) => {
 });
 
 // 📥 GET → Download de relatório
-router.get('/download/:nomeArquivo', (req, res) => {
-  const { nomeArquivo } = req.params;
-  const caminho = path.join(pastaRelatorios, nomeArquivo);
+router.get('/download/:nomeArquivo', async (req, res) => {
+  try {
+    const { nomeArquivo } = req.params;
+    const caminho = path.join(pastaRelatorios, nomeArquivo);
 
-  res.download(caminho, err => {
-    if (err) {
-      console.error('Erro ao baixar relatório:', err);
-      res.status(500).json({ error: 'Erro ao baixar relatório' });
-    }
-  });
+    // Verifica se o arquivo realmente existe
+    await fs.access(caminho);
+
+    res.setHeader('Content-Disposition', `attachment; filename="${nomeArquivo}"`);
+    res.setHeader('Content-Type', 'application/pdf');
+
+    res.download(caminho, nomeArquivo, (err) => {
+      if (err) {
+        console.error('❌ Erro ao enviar o arquivo:', err);
+        res.status(500).json({ error: 'Erro ao baixar relatório' });
+      }
+    });
+  } catch (err) {
+    console.error('❌ Arquivo não encontrado ou erro de leitura:', err);
+    res.status(404).json({ error: 'Relatório não encontrado' });
+  }
 });
+
 
 module.exports = router;

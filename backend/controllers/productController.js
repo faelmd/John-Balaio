@@ -27,7 +27,7 @@ const createProduct = async (req, res) => {
             return res.status(400).json({ error: 'Campos obrigatórios não informados' });
         }
 
-        if (!ORIGENS_VALIDAS.includes(origem)) {
+        if (!ORIGENS_VALIDAS.includes(origem.toLowerCase())) {
             return res.status(400).json({ error: `Origem inválida. Use: ${ORIGENS_VALIDAS.join(', ')}` });
         }
 
@@ -71,7 +71,7 @@ const updateProduct = async (req, res) => {
             return res.status(400).json({ error: 'Campos inválidos ou ausentes' });
         }
 
-        if (!ORIGENS_VALIDAS.includes(origem)) {
+        if (!ORIGENS_VALIDAS.includes(origem.toLowerCase())) {
             return res.status(400).json({ error: `Origem inválida. Use: ${ORIGENS_VALIDAS.join(', ')}` });
         }
 

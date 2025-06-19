@@ -1,10 +1,11 @@
 import React from 'react';
 import '../styles/ProductCard.css';
+import { API } from '../api';
 
 const ProductCard = ({ product, onEdit, onDelete, onToggleAvailability }) => {
   const imageUrl = product.imagem
-    ? `/uploads/${product.imagem}`
-    : '/default-image.jpg'; // Imagem padrão
+    ? `${API.defaults.baseURL}/uploads/${product.imagem}`
+    : `${API.defaults.baseURL}/default-image.jpg`; // Imagem padrão
 
   return (
     <div className="product-card">

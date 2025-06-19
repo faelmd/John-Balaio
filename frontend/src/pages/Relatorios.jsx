@@ -22,7 +22,7 @@ const Relatorios = () => {
   };
 
   const handleDownload = (nome) => {
-    window.open(`/api/relatorios/download/${nome}`, '_blank');
+    window.open(`${API.defaults.baseURL}/api/relatorios/download/${nome}`, '_blank');
   };
 
   return (

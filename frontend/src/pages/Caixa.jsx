@@ -79,22 +79,22 @@ const fetchComprovantes = useCallback(async () => {
 
   return (
     <div className="caixa-container">
-      <h1 className="caixa-title">🧾 Painel do Caixa</h1>
+      <h1 className="caixa-title">Painel do Caixa</h1>
 
-      <h2>🟢 Mesas Abertas</h2>
+      <h2>Mesas Abertas</h2>
       {loading ? (
         <p>Carregando mesas...</p>
       ) : mesasAbertas.length > 0 ? (
         renderMesaList(mesasAbertas)
       ) : (
-        <p>🔍 Nenhuma mesa aberta no momento.</p>
+        <p>Nenhuma mesa aberta no momento.</p>
       )}
 
-      <h2>📄 Comprovantes de Mesas Encerradas</h2>
+      <h2>Comprovantes de Mesas Encerradas</h2>
       {loading ? (
         <p>Carregando comprovantes...</p>
       ) : comprovantes.length === 0 ? (
-        <p>🔍 Nenhum comprovante disponível.</p>
+        <p>Nenhum comprovante disponível.</p>
       ) : (
         <ul className="comprovantes-lista">
           {comprovantes.map(file => (

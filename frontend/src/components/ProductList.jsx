@@ -3,12 +3,12 @@ import { API } from '../api';
 
 const EditProductModal = ({ product, onClose }) => {
   const [formData, setFormData] = useState({
-    name: product.name,
-    description: product.description,
-    price: product.price,
+    nome: product.nome,
+    descricao: product.descricao,
+    preco: product.preco,
     categoria: product.categoria,
     origem: product.origem,
-    imagem: product.image,
+    imagem: product.imagem,
   });
 
   const handleChange = (e) => {
@@ -34,23 +34,23 @@ const EditProductModal = ({ product, onClose }) => {
         <form onSubmit={handleSubmit}>
           <input
             type="text"
-            name="name"
-            value={formData.name}
+            name="nome"
+            value={formData.nome}
             onChange={handleChange}
             placeholder="Nome"
             required
           />
           <textarea
-            name="description"
-            value={formData.description}
+            name="descricao"
+            value={formData.descricao}
             onChange={handleChange}
             placeholder="Descrição"
             required
           />
           <input
             type="number"
-            name="price"
-            value={formData.price}
+            name="preco"
+            value={formData.preco}
             onChange={handleChange}
             placeholder="Preço"
             required
