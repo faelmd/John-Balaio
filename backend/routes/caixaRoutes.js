@@ -81,7 +81,7 @@ router.put('/pagar', async (req, res) => {
     // Atualiza os itens como pagos
     await pool.query(`UPDATE itens_pedidos SET pago = 1 WHERE id IN (?)`, [itemIds]);
 
-    // Pega o ID da mesa a partir de qualquer item
+    // Pega o número da mesa a partir de um dos itens
     const [[{ mesa }]] = await pool.query(`
       SELECT p.mesa
       FROM itens_pedidos i
@@ -90,7 +90,7 @@ router.put('/pagar', async (req, res) => {
       LIMIT 1
     `, [itemIds[0]]);
 
-    // Verifica se todos os itens da mesa estão pagos
+    // Verifica se ainda existem itens não pagos na mesa
     const [[{ totalNaoPago }]] = await pool.query(`
       SELECT COUNT(*) AS totalNaoPago
       FROM itens_pedidos i
@@ -98,19 +98,27 @@ router.put('/pagar', async (req, res) => {
       WHERE p.mesa = ? AND i.pago = 0 AND p.fechamento IS NULL
     `, [mesa]);
 
-    // Se todos os itens pagos, encerra a mesa e gera comprovante
+    // Busca todos os itens pagos da mesa (para gerar comprovante parcial ou total)
+    const [itensPagos] = await pool.query(`
+      SELECT nome_produto, quantidade, preco_unitario
+      FROM itens_pedidos i
+      JOIN pedidos p ON i.id_pedido = p.id
+      WHERE p.mesa = ? AND i.pago = 1
+    `, [mesa]);
+
+    // Gera comprovante apenas se todos os itens foram pagos
     if (totalNaoPago === 0) {
       await pool.query(`
-        UPDATE pedidos SET fechamento = CURRENT_TIMESTAMP
-        WHERE mesa = ? AND fechamento IS NULL
-      `, [mesa]);
+    UPDATE pedidos SET fechamento = CURRENT_TIMESTAMP
+    WHERE mesa = ? AND fechamento IS NULL
+  `, [mesa]);
 
       const [itens] = await pool.query(`
-        SELECT nome_produto, quantidade, preco_unitario
-        FROM itens_pedidos i
-        JOIN pedidos p ON i.id_pedido = p.id
-        WHERE p.mesa = ?
-      `, [mesa]);
+    SELECT nome_produto, quantidade, preco_unitario
+    FROM itens_pedidos i
+    JOIN pedidos p ON i.id_pedido = p.id
+    WHERE p.mesa = ?
+  `, [mesa]);
 
       const total = itens.reduce((acc, item) =>
         acc + item.quantidade * item.preco_unitario, 0
@@ -136,6 +144,9 @@ router.put('/pagar', async (req, res) => {
     }
 
     res.json({ success: true, encerrado: false });
+
+    // Caso nada tenha sido pago (caso raro)
+    res.json({ success: true, encerrado: totalNaoPago === 0 });
 
   } catch (err) {
     console.error('❌ Erro no pagamento:', err);

@@ -58,45 +58,37 @@ const MesaCaixa = () => {
       .toFixed(2);
   };
 
-const confirmarPagamento = async () => {
-  try {
-    const res = await API.put('/api/caixa/pagar', {
-      itemIds: selecionados,
-    });
+  const confirmarPagamento = async () => {
+    try {
+      const res = await API.put('/api/caixa/pagar', {
+        itemIds: selecionados,
+      });
 
-    if (res.data.encerrado) {
-      alert('✅ Todos os itens foram pagos. Mesa encerrada.');
-
-      // Adiciona comprovante à lista se disponível
-      if (res.data.comprovante) {
-        setComprovante(res.data.comprovante);
+      if (res.data.success) {
+        alert('✅ Pagamento registrado com sucesso!');
+        setSelecionados([]);
+        navigate('/caixa'); // Volta ao painel principal após pagamento
       }
-    } else {
-      alert('Pagamento registrado.');
+    } catch (err) {
+      console.error('❌ Erro ao pagar:', err);
+      alert('Erro ao registrar pagamento.');
     }
-
-    setSelecionados([]);
-    fetchItens();
-  } catch (err) {
-    console.error('❌ Erro ao pagar:', err);
-    alert('Erro ao registrar pagamento.');
-  }
-};
+  };
 
   const pagarTudo = async () => {
     try {
-      const res = await API.post(`/api/caixa/pagar/${mesaId}`);
+      await API.put('/api/caixa/pagar', { itemIds: selecionados });
+      alert('✅ Pagamento registrado com sucesso!');
 
-      alert(`Pagamento confirmado. Comprovante gerado e disponível no painel.`);
-
+      alert('✅ Pagamento total registrado com sucesso!');
       setSelecionados([]);
-      setComprovante(res.data.arquivo);
-      fetchItens();
+      navigate('/caixa');
     } catch (err) {
       console.error('❌ Erro ao pagar tudo:', err);
       alert('Erro ao pagar conta completa.');
     }
   };
+
 
   const pagarDividido = async () => {
     const partes = prompt('Dividir em quantas partes?');
@@ -147,7 +139,7 @@ const confirmarPagamento = async () => {
             <button
               className="baixar-comprovante"
               onClick={() => {
-                const url = `/comprovantes/${comprovante}`;
+                const url = `${API.defaults.baseURL}/comprovantes/${comprovante}`;
                 const link = document.createElement('a');
                 link.href = url;
                 link.download = comprovante;

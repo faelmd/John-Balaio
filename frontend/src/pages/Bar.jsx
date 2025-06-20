@@ -12,7 +12,11 @@ const Bar = () => {
   useEffect(() => {
     const autorizado = localStorage.getItem('authBar') === 'true';
     if (!autorizado) navigate('/login?perfil=bar');
-    else fetchPedidos();
+    else {
+      fetchPedidos();
+      const interval = setInterval(fetchPedidos, 5000);
+      return () => clearInterval(interval);
+    }
   }, [navigate]);
 
   useEffect(() => {

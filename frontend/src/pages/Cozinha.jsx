@@ -10,18 +10,15 @@ const Cozinha = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    document.title = 'John Balaio | Cozinha';
     const autorizado = localStorage.getItem('authCozinha') === 'true';
-    if (!autorizado) navigate('/cozinha-login');
+    if (!autorizado) navigate('/login?perfil=cozinha');
     else {
       fetchPedidos();
       const interval = setInterval(fetchPedidos, 5000);
       return () => clearInterval(interval);
     }
   }, [navigate]);
-
-  useEffect(() => {
-    document.title = 'John Balaio | Cozinha';
-  }, []);
 
   const fetchPedidos = async () => {
     try {

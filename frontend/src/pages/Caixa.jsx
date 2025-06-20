@@ -20,16 +20,24 @@ const CaixaDashboard = () => {
     }
   }, []);
 
-const fetchComprovantes = useCallback(async () => {
-  try {
-    const { data } = await API.get('/api/caixa/comprovantes');
-    const ordenados = data.sort((a, b) => b.localeCompare(a)); // ordena do mais novo para o mais velho
-    setComprovantes(ordenados);
-  } catch (err) {
-    console.error('❌ Erro ao buscar comprovantes:', err);
-    alert('Erro ao buscar comprovantes.');
-  }
-}, []);
+  const fetchComprovantes = useCallback(async () => {
+    try {
+      const { data } = await API.get('/api/caixa/comprovantes');
+
+      const hoje = new Date().toISOString().split('T')[0]; // exemplo: '2025-06-19'
+
+      const comprovantesHoje = data.filter(file => {
+        const match = file.match(/comprovante-mesa-\d+-(\d{4}-\d{2}-\d{2})T/);
+        return match && match[1] === hoje;
+      });
+
+      const ordenados = comprovantesHoje.sort((a, b) => b.localeCompare(a));
+      setComprovantes(ordenados);
+    } catch (err) {
+      console.error('❌ Erro ao buscar comprovantes:', err);
+      alert('Erro ao buscar comprovantes.');
+    }
+  }, []);
 
   const fetchDados = useCallback(async () => {
     setLoading(true);
@@ -40,22 +48,32 @@ const fetchComprovantes = useCallback(async () => {
   useEffect(() => {
     document.title = 'John Balaio | Caixa';
     const autorizado = localStorage.getItem('authCaixa') === 'true';
-    if (!autorizado) navigate('/caixa-login');
-    else fetchDados();
+    if (!autorizado) navigate('/login?perfil=caixa');
+    else {
+    fetchDados();
+    const interval = setInterval(fetchDados, 5000);
+    return () => clearInterval(interval);
+  }
   }, [navigate, fetchDados]);
 
   const handleMesaClick = (mesa) => {
     navigate(`/caixa/mesa/${mesa.mesa}`);
   };
 
-  const downloadComprovante = (file) => {
-    const url = `/comprovantes/${file}`;
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = file;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const downloadComprovante = async (file) => {
+    try {
+      const response = await fetch(`${API.defaults.baseURL}/comprovantes/${file}`);
+      const blob = await response.blob();
+
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute('download', file);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Erro ao baixar comprovante:', err);
+    }
   };
 
   const renderMesaList = (lista) => (

@@ -1,0 +1,10 @@
+=== COMPROVANTE DE PAGAMENTO ===
+Mesa: 7
+Data/Hora: 20/06/2025, 18:49:32
+
+John Bacon - 2x R$35.00
+John Salada - 1x R$35.00
+Refrigerante Lata - 3x R$6.00
+
+TOTAL: R$123.00
+===============================
