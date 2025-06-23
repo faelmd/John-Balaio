@@ -1,0 +1,9 @@
+=== COMPROVANTE DE PAGAMENTO ===
+Mesa: 3
+Data/Hora: 23/06/2025, 08:46:14
+
+Refrigerante Lata - 1x R$6.00
+Gelo e Limão - 1x R$1.50
+
+TOTAL: R$7.50
+===============================

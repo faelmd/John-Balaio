@@ -1,0 +1,11 @@
+=== COMPROVANTE DE PAGAMENTO ===
+Mesa: 3
+Data/Hora: 23/06/2025, 08:31:05
+
+Iscas de Tilápia - 1x R$65.00
+John Bacon - 1x R$35.00
+Refrigerante Lata - 1x R$6.00
+Gelo e Limão - 1x R$1.50
+
+TOTAL: R$107.50
+===============================

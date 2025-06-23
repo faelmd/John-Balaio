@@ -1,0 +1,11 @@
+=== COMPROVANTE DE PAGAMENTO ===
+Mesa: 1
+Data/Hora: 23/06/2025, 08:30:24
+
+Laranja Natural - 1x R$12.00
+Laranja e Frutas Vermelhas - 1x R$14.00
+Gelo Duplo - 2x R$1.50
+Limão ao Meio - 2x R$1.00
+
+TOTAL: R$31.00
+===============================

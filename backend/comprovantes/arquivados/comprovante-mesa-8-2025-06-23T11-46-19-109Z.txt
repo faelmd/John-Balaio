@@ -1,0 +1,11 @@
+=== COMPROVANTE DE PAGAMENTO ===
+Mesa: 8
+Data/Hora: 23/06/2025, 08:46:19
+
+John Bacon - 1x R$35.00
+Costelinha Suína ao Molho Barbecue com Fritas 400g - 1x R$75.00
+Ancho 400g - 1x R$89.00
+Gelo - 1x R$1.00
+
+TOTAL: R$200.00
+===============================

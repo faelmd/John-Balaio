@@ -194,4 +194,66 @@ router.get('/historico', async (req, res) => {
   }
 });
 
+//---------------Arthur mexeu daqui para baixo
+
+router.post("/criar-pedido", async (req, res) => {
+  const {
+    mesa,
+    observacao,
+    itens,
+    status = "pendente",
+    nome_cozinheiro = null,
+  } = req.body;
+
+  // 🔍 Validação de entrada
+  if (!mesa || !Array.isArray(itens) || itens.length === 0) {
+    return res
+      .status(400)
+      .json({ erro: "Informe a mesa e os itens corretamente." });
+  }
+
+  try {
+    // 🧾 Inserir pedido
+    const [pedidoResult] = await pool.query(
+      "INSERT INTO pedidos (mesa, observacao, status, nome_cozinheiro) VALUES (?, ?, ?, ?)",
+      [mesa, observacao, status, nome_cozinheiro || null]
+    );
+
+    const idPedido = pedidoResult.insertId;
+
+    const bebidas = [
+      "Bebidas",
+      "Sucos",
+      "Sodas Italianas",
+      "Cervejas",
+      "Para Brindar",
+      "Doses e Shots",
+    ];
+
+    // 🛒 Inserir cada item do pedido
+    for (const { nome, quantidade, preco, categoria, pago = false } of itens) {
+      if (!nome || !quantidade || !preco || !categoria) {
+        throw new Error("Item inválido. Campos obrigatórios ausentes.");
+      }
+      const origem = bebidas.includes(categoria) ? "bar" : "cozinha";
+
+      await pool.query(
+        `INSERT INTO itens_pedidos 
+         (id_pedido, nome_produto, quantidade, preco_unitario, origem, pago)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [idPedido, nome, quantidade, preco, origem, pago]
+      );
+    }
+
+    res.status(201).json({
+      mensagem: "Pedido criado com sucesso!",
+      id_pedido: idPedido,
+    });
+  } catch (err) {
+    console.error("Erro ao criar pedido com itens:", err.message);
+    res.status(500).json({ erro: "Erro ao processar o pedido." });
+  }
+});
+
+
 module.exports = router;

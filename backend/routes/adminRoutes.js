@@ -20,7 +20,7 @@ router.post('/finalizar-expediente', async (req, res) => {
     const nomeArquivo = `relatorio-${dataHora}.pdf`;
     const caminho = path.join(pastaRelatorios, nomeArquivo);
 
-    const [pedidos] = await pool.query('SELECT * FROM pedidos ORDER BY criado_em ASC');
+    const [pedidos] = await pool.query('SELECT * FROM pedidos ORDER BY mesa ASC');
     if (pedidos.length === 0) {
       return res.status(400).json({ error: 'Não há pedidos para encerrar.' });
     }
@@ -39,7 +39,9 @@ router.post('/finalizar-expediente', async (req, res) => {
 
     for (const pedido of pedidos) {
       const [itens] = await pool.query(
-        'SELECT * FROM itens_pedidos WHERE id_pedido = ?',
+        `SELECT nome_produto, quantidade, preco_unitario, pago, status, nome_cozinheiro
+         FROM itens_pedidos
+         WHERE id_pedido = ?`,
         [pedido.id]
       );
 
@@ -61,9 +63,12 @@ router.post('/finalizar-expediente', async (req, res) => {
         const subtotal = item.preco_unitario * item.quantidade;
         totalPedido += subtotal;
 
-        doc.text(
-          `- ${item.nome_produto} | ${item.quantidade}x | R$${item.preco_unitario.toFixed(2)} | Subtotal: R$${subtotal.toFixed(2)} | Pago: ${item.pago ? 'Sim' : 'Não'} | Status: ${item.status}`
-        );
+        let linhaItem = `- ${item.nome_produto} | ${item.quantidade}x | R$${item.preco_unitario.toFixed(2)} | Subtotal: R$${subtotal.toFixed(2)} | Pago: ${item.pago ? 'Sim' : 'Não'} | Status: ${item.status}`;
+        if (item.nome_cozinheiro) {
+          linhaItem += ` | Cozinheiro: ${item.nome_cozinheiro}`;
+        }
+
+        doc.text(linhaItem);
       });
 
       doc.text(`Total do pedido: R$${totalPedido.toFixed(2)}`);
@@ -79,6 +84,22 @@ router.post('/finalizar-expediente', async (req, res) => {
     });
 
     doc.end();
+
+    // 🔁 Arquivar comprovantes após fechar expediente
+    const pastaComprovantes = path.join(__dirname, '../comprovantes');
+    const pastaArquivados = path.join(pastaComprovantes, 'arquivados');
+
+    await fs.mkdir(pastaArquivados, { recursive: true });
+    const comprovantes = await fs.readdir(pastaComprovantes, { withFileTypes: true });
+
+    for (const file of comprovantes) {
+      if (file.isFile() && file.name.endsWith('.txt')) {
+        const origem = path.join(pastaComprovantes, file.name);
+        const destino = path.join(pastaArquivados, file.name);
+        await fs.rename(origem, destino);
+      }
+    }
+
 
     // 🔥 Limpar base
     await pool.query('DELETE FROM itens_pedidos');

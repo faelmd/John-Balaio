@@ -1,0 +1,11 @@
+=== COMPROVANTE DE PAGAMENTO ===
+Mesa: 6
+Data/Hora: 23/06/2025, 08:35:25
+
+John Salada - 2x R$35.00
+Tulipa de Frango - 1x R$32.00
+Laranja e Frutas Vermelhas - 2x R$14.00
+Gelo - 1x R$1.00
+
+TOTAL: R$131.00
+===============================

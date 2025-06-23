@@ -181,3 +181,59 @@ exports.pagarItens = async (req, res) => {
         res.status(500).json({ message: 'Erro ao pagar itens.' });
     }
 };
+
+//--------------------------------------------PARTES QUE O ARTHUR MUDOU:
+
+
+module.exports.criarPedidoHandler = async function (req, res, body) {
+  try {
+    const { mesa, observacao, itens } = JSON.parse(body);
+
+    if (!mesa || !Array.isArray(itens) || itens.length === 0) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ erro: 'Informe a mesa e os itens corretamente.' }));
+    }
+
+    const conn = await db.getConnection();
+
+    try {
+      await conn.beginTransaction();
+
+      const [pedidoResult] = await conn.execute(
+        'INSERT INTO pedidos (mesa, observacao) VALUES (?, ?)',
+        [mesa, observacao || null]
+      );
+
+      const idPedido = pedidoResult.insertId;
+
+      for (const { nome_produto, quantidade, preco_unitario, origem } of itens) {
+        if (!nome_produto || !quantidade || !preco_unitario || !origem) {
+          throw new Error('Item inválido. Campos obrigatórios ausentes.');
+        }
+
+        await conn.execute(
+          `INSERT INTO itens_pedidos 
+           (id_pedido, nome_produto, quantidade, preco_unitario, origem) 
+           VALUES (?, ?, ?, ?, ?)`,
+          [idPedido, nome_produto, quantidade, preco_unitario, origem]
+        );
+      }
+
+      await conn.commit();
+
+      res.writeHead(201, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ mensagem: 'Pedido criado com sucesso!', id_pedido: idPedido }));
+    } catch (err) {
+      await conn.rollback();
+      console.error('Erro durante transação:', err.message);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ erro: 'Erro ao processar o pedido.' }));
+    } finally {
+      conn.release();
+    }
+  } catch (err) {
+    console.error('Erro no controller/service:', err.message);
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ erro: 'Erro inesperado no servidor.' }));
+  }
+};

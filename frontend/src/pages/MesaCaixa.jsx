@@ -77,7 +77,7 @@ const MesaCaixa = () => {
 
   const pagarTudo = async () => {
     try {
-      await API.put('/api/caixa/pagar', { itemIds: selecionados });
+      await API.post(`/api/caixa/pagar/${mesaId}`);
       alert('✅ Pagamento registrado com sucesso!');
 
       alert('✅ Pagamento total registrado com sucesso!');
