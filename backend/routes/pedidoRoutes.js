@@ -205,39 +205,33 @@ router.post("/criar-pedido", async (req, res) => {
     nome_cozinheiro = null,
   } = req.body;
 
-  // 🔍 Validação de entrada
   if (!mesa || !Array.isArray(itens) || itens.length === 0) {
-    return res
-      .status(400)
-      .json({ erro: "Informe a mesa e os itens corretamente." });
+    return res.status(400).json({ erro: "Informe a mesa e os itens corretamente." });
   }
 
+  const conn = await pool.getConnection();
   try {
-    // 🧾 Inserir pedido
-    const [pedidoResult] = await pool.query(
+    await conn.beginTransaction();
+
+    const [pedidoResult] = await conn.query(
       "INSERT INTO pedidos (mesa, observacao, status, nome_cozinheiro) VALUES (?, ?, ?, ?)",
       [mesa, observacao, status, nome_cozinheiro || null]
     );
-
     const idPedido = pedidoResult.insertId;
 
-    const bebidas = [
-      "Bebidas",
-      "Sucos",
-      "Sodas Italianas",
-      "Cervejas",
-      "Para Brindar",
-      "Doses e Shots",
-    ];
+    for (const item of itens) {
+      const { nome, quantidade, preco, origem, categoria, pago = false } = item;
 
-    // 🛒 Inserir cada item do pedido
-    for (const { nome, quantidade, preco, categoria, pago = false } of itens) {
-      if (!nome || !quantidade || !preco || !categoria) {
-        throw new Error("Item inválido. Campos obrigatórios ausentes.");
+      if (
+        !nome ||
+        typeof quantidade !== "number" || quantidade <= 0 ||
+        typeof preco !== "number" || preco <= 0 ||
+        !origem
+      ) {
+        throw new Error("Item inválido. Verifique os campos obrigatórios.");
       }
-      const origem = bebidas.includes(categoria) ? "bar" : "cozinha";
 
-      await pool.query(
+      await conn.query(
         `INSERT INTO itens_pedidos 
          (id_pedido, nome_produto, quantidade, preco_unitario, origem, pago)
          VALUES (?, ?, ?, ?, ?, ?)`,
@@ -245,13 +239,56 @@ router.post("/criar-pedido", async (req, res) => {
       );
     }
 
+    await conn.commit();
+
     res.status(201).json({
       mensagem: "Pedido criado com sucesso!",
       id_pedido: idPedido,
     });
   } catch (err) {
-    console.error("Erro ao criar pedido com itens:", err.message);
+    await conn.rollback();
+    console.error("❌ Erro ao criar pedido com itens:", err.message);
     res.status(500).json({ erro: "Erro ao processar o pedido." });
+  } finally {
+    conn.release();
+  }
+});
+
+
+// 🔍 GET /mesa/:numero → Buscar pedidos da mesa com status dos itens
+router.get('/mesa/:numero', async (req, res) => {
+  const numeroMesa = Number(req.params.numero);
+
+  if (!numeroMesa || isNaN(numeroMesa)) {
+    return res.status(400).json({ erro: 'Número da mesa inválido.' });
+  }
+
+  try {
+    const [itens] = await pool.query(`
+      SELECT 
+        ip.id AS id_item,
+        ip.nome_produto,
+        ip.quantidade,
+        ip.preco_unitario,
+        ip.origem,
+        ip.status,
+        ip.pago,
+        pr.categoria,
+        p.id AS id_pedido,
+        p.mesa,
+        p.observacao,
+        p.criado_em
+      FROM itens_pedidos ip
+      JOIN pedidos p ON ip.id_pedido = p.id
+      LEFT JOIN produtos pr ON ip.nome_produto = pr.nome
+      WHERE p.mesa = ?
+      ORDER BY p.id ASC, ip.id ASC
+    `, [numeroMesa]);
+
+    res.status(200).json(itens);
+  } catch (err) {
+    console.error('❌ Erro ao buscar pedidos da mesa:', err);
+    res.status(500).json({ erro: 'Erro ao buscar pedidos da mesa.' });
   }
 });
 
